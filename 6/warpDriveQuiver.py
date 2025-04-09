@@ -101,7 +101,7 @@ ax.quiver(X, Y, Z, E3_x, E3_y, E3_z, length=0.1, color='b', linewidth=0.5)
 ax.set_xlabel('X')
 ax.set_ylabel('Y')
 ax.set_zlabel('Z')
-ax.set_title('3D Quiver Plot of f1, f2, f3 with Normalized Directions e1, e2, e3')
+ax.set_title('E Field warp drive quiver plot. Blue positive, red negative')
 
 plt.show()
 

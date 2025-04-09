@@ -15,8 +15,8 @@ double coth(double x) {
 }
 
 // Function to compute the matrix
-Matrix3f f(const Vector3f& r_V, double R, double S, double vX) {
-    Eigen::Matrix3f B;
+Vector3f f(const Vector3f& r_V, double R, double S, double vX, double icity, double factor) {
+    Eigen::Vector3f v;
 
     // Precompute common
     double x = r_V(0);
@@ -34,92 +34,58 @@ Matrix3f f(const Vector3f& r_V, double R, double S, double vX) {
     double tanhMin = tanh(S*(r-R));
     double CRS = coth(R*S);
 
-    double secMinPlus2 = secMin2 - secPlus2;
-    double secMinPlus2Tanh = (secMin2*tanhMin) - (secPlus2*tanhPlus);
+    double sechMinPlus2 = secMin2 - secPlus2;
+    double sechMinPlus2Tanh = (secMin2*tanhMin) - (secPlus2*tanhPlus);  
 
-    // Compute matrix (row, col)
-    B(0, 0) = 0.0;
-    B(0, 1) = .25 * CRS * S * x * z * (S * secMinPlus2 / r3 + 2 * S*secMinPlus2Tanh / r2);
-    B(0, 2) = -.25 * CRS * S * x * y * (S * secMinPlus2 / r3 + 2 * S*secMinPlus2Tanh / r2);
+    double DzDyB = -.5 * coth(R*S) * S * y * z * (sechMinPlus2 / (r*r*r) + (2 * S * sechMinPlus2Tanh / (r*r)));
+    double DyDyB = -.5 * coth(R*S) * S * (y * y * (sechMinPlus2 / (r*r*r) + (2 * S * sechMinPlus2Tanh / (r*r))) + (S * -1 * sechMinPlus2 / r));
+    double DzDzB = -.5 * coth(R*S) * S * (z * z * (sechMinPlus2 / (r*r*r) + (2 * S * sechMinPlus2Tanh / (r*r))) + (S * -1 * sechMinPlus2 / r));
+    double DyDxB = -.5 * coth(R*S) * S * y * x * (sechMinPlus2 / (r*r*r) + (2 * S * sechMinPlus2Tanh / (r*r)));
+    double DzDxB = -.5 * coth(R*S) * S * x * z * (sechMinPlus2 / (r*r*r) + (2 * S * sechMinPlus2Tanh / (r*r)));
 
-    B(1, 0) = 0.0;
-    B(1, 1) = .25 * CRS * S * y * z * (S * secMinPlus2 / r3 + 2 * S*secMinPlus2Tanh / r2);
-    B(1, 2) = -.25 * CRS * S * (y * y * (S * secMinPlus2 / r3 + 2 * S*secMinPlus2Tanh / r2) - secMinPlus2/r);
+    double vec1;
+    double vec2;
+    double vec3 = 1.0;
 
-    B(2, 0) = 0.0;
-    B(2, 1) = .25 * CRS * S * (z * z * (S * secMinPlus2 / r3 + 2 * S*secMinPlus2Tanh / r2) - secMinPlus2/r);
-    B(2, 2) = .25 * CRS * S * y * z * (S * secMinPlus2 / r3 + 2 * S*secMinPlus2Tanh / r2);
+    if (icity == 1.0) {
+        vec1 = (-1 * DyDxB * DzDzB - DzDxB * DzDyB - DzDxB * std::sqrt(std::abs(DzDyB * DzDyB - DyDyB*DzDzB))) / (DzDzB * std::sqrt(std::abs(DzDyB * DzDyB - DyDyB*DzDzB)));
+        vec2 = -DzDyB + std::sqrt(std::abs(DzDyB * DzDyB - DyDyB*DzDzB)) / DzDzB;
+    }
+    else if (icity == -1.0) {
+        vec1 = (DyDxB * DzDzB + DzDxB * DzDyB - DzDxB * std::sqrt(std::abs(DzDyB * DzDyB - DyDyB*DzDzB))) / (DzDzB * std::sqrt(std::abs(DzDyB * DzDyB - DyDyB*DzDzB)));
+        vec2 = -DzDyB - std::sqrt(std::abs(DzDyB * DzDyB - DyDyB*DzDzB)) / DzDzB;
+    }
 
-    std::cout << B << '\n' << '\n';
+    v << -1.0 * factor * vec1, -1.0 * factor * vec2, factor * vec3;
 
-    return B;
+    return v;
 }
 
-double eigen_solve_val(Matrix3f E_temp, int icity) {
-    // Compute eigenvalues and eigenvectors
-    //std::cout << E_temp << "\n";
-    EigenSolver<Matrix3f> solver(E_temp);
+double eigen_solve_val(const Vector3f& r_V, double R, double S, int icity) {
+    // Precompute common
+    double x = r_V(0);
+    double y = r_V(1);
+    double z = r_V(2);
+    double r = r_V.norm();
+    double r2 = r*r;
+    double r3 = r2*r;
     
-    Vector3cf eigenvalues = solver.eigenvalues();   // Complex eigenvalues
+    double secPlus = sech(S*(r+R));
+    double secPlus2 = secPlus * secPlus;
+    double secMin = sech(S*(r-R));
+    double secMin2 = secMin * secMin;
+    double tanhPlus = tanh(S*(r+R));
+    double tanhMin = tanh(S*(r-R));
+    double CRS = coth(R*S);
 
-    double maxEigenvalue = -1e6; // Large negative value for initialization
-    int maxIndex = -1;
+    double sechMinPlus2 = secMin2 - secPlus2;
+    double sechMinPlus2Tanh = (secMin2*tanhMin) - (secPlus2*tanhPlus);  
 
-    // Loop through eigenvalues to find the largest with the same sign as `icity`
-    for (int i = 0; i < 3; ++i) {
-        double realVal = eigenvalues[i].real(); // Extract real part of eigenvalue
-        
-        if (icity * realVal > 0 && realVal * icity > maxEigenvalue) {
-            
-            maxEigenvalue = realVal * icity;
-            maxIndex = i;
-            
-        }
-    }
-    double result;
-    if (maxIndex < 0) {
-        result = 0.0;
-    } else {
-        result = eigenvalues(maxIndex).real();
-    }
-
-    // Test for trace free
-    //if ((eigenvalues(0) + eigenvalues(1) + eigenvalues(2)).real() > 0.00001){
-    //    std::cout << eigenvalues(0) + eigenvalues(1) + eigenvalues(2) << '\n';
-    //}
-
-    return result;
-    }
-
-// Function to get the eigenvector corresponding to the largest eigenvalue with the given sign
-Vector3f eigen_solve(Matrix3f E_temp, int icity) {
-    // Compute eigenvalues and eigenvectors
-    EigenSolver<Matrix3f> solver(E_temp);
-    Vector3cf eigenvalues = solver.eigenvalues();   // Complex eigenvalues
-    Matrix3cf eigenvectors = solver.eigenvectors(); // Corresponding eigenvectors
-    Vector3f result;
-
-    double maxEigenvalue = -1e6; // Large negative value for initialization
-    int maxIndex = -1;
-
-    // Loop through eigenvalues to find the largest with the same sign as `icity`
-    for (int i = 0; i < 3; ++i) {
-        double realVal = eigenvalues[i].real(); // Extract real part of eigenvalue
-        
-        if (icity * realVal > 0 && realVal * icity > maxEigenvalue) {
-            maxEigenvalue = realVal * icity;
-            maxIndex = i;
-        }
-    }
-    // Convert complex eigenvector to real vector (assuming it's real-valued)
-    if (maxIndex < 0) {
-        result << 0.0,0.0,0.0;
-        return result;
-    } 
+    double DzDyB = -.5 * coth(R*S) * S * y * z * (sechMinPlus2 / (r*r*r) + (2 * S * sechMinPlus2Tanh / (r*r)));
+    double DyDyB = -.5 * coth(R*S) * S * (y * y * (sechMinPlus2 / (r*r*r) + (2 * S * sechMinPlus2Tanh / (r*r))) + (S * -1 * sechMinPlus2 / r));
+    double DzDzB = -.5 * coth(R*S) * S * (z * z * (sechMinPlus2 / (r*r*r) + (2 * S * sechMinPlus2Tanh / (r*r))) + (S * -1 * sechMinPlus2 / r));
     
-    result = eigenvectors.col(maxIndex).real();
-    
-    return result / result.norm();
+    return icity * .5 * std::sqrt(std::abs((DzDyB*DzDyB) - DyDyB*DzDzB));
 }
 
 extern "C" {
@@ -132,7 +98,7 @@ struct vect {
     int its;
 };
 
-vect rka_iter(double R, double sigma, double vX, double seed_x, double seed_y, double seed_z, int num_its, int icity, double ending_tolerance, double delta_0, double safety, double h0) {    
+vect rka_iter(double R, double sigma, double vX, double seed_x, double seed_y, double seed_z, int num_its, int icity, double ending_tolerance, double delta_0, double safety, double h0, double factor) {    
     static const double a2 = 1.0 / 5.0, a3 = 3.0 / 10.0, a4 = 3.0 / 5.0, a5 = 1.0, a6 = 7.0 / 8.0;
     static const double b21 = 1.0 / 5.0;
     static const double b31 = 1.0 / 40.0, b32 = 9.0 / 40.0;
@@ -156,23 +122,17 @@ vect rka_iter(double R, double sigma, double vX, double seed_x, double seed_y, d
 
         while (sizing) {
             // Compute Runge-Kutta stages
-            Matrix3f E1 = f(r, R, sigma, vX);
-            Vector3f k1 = h * eigen_solve(E1, icity);
+            Vector3f k1 = h * f(r, R, sigma, vX, icity, factor);
 
-            Matrix3f E2 = f(r + b21 * k1, R, sigma, vX);
-            Vector3f k2 = h * eigen_solve(E2, icity);
+            Vector3f k2 = h * f(r + b21 * k1, R, sigma, vX, icity, factor);
 
-            Matrix3f E3 = f(r + b31 * k1 + b32 * k2, R, sigma, vX);
-            Vector3f k3 = h * eigen_solve(E3, icity);
+            Vector3f k3 = h * f(r + b31 * k1 + b32 * k2, R, sigma, vX, icity, factor);
 
-            Matrix3f E4 = f(r + b41 * k1 + b42 * k2 + b43 * k3, R, sigma, vX);
-            Vector3f k4 = h * eigen_solve(E4, icity);
+            Vector3f k4 = h * f(r + b41 * k1 + b42 * k2 + b43 * k3, R, sigma, vX, icity, factor);
 
-            Matrix3f E5 = f(r + b51 * k1 + b52 * k2 + b53 * k3 + b54 * k4, R, sigma, vX);
-            Vector3f k5 = h * eigen_solve(E5, icity);
+            Vector3f k5 = h * f(r + b51 * k1 + b52 * k2 + b53 * k3 + b54 * k4, R, sigma, vX, icity, factor);
 
-            Matrix3f E6 = f(r + b61 * k1 + b62 * k2 + b63 * k3 + b64 * k4 + b65 * k5, R, sigma, vX);
-            Vector3f k6 = h * eigen_solve(E6, icity);
+            Vector3f k6 = h * f(r + b61 * k1 + b62 * k2 + b63 * k3 + b64 * k4 + b65 * k5, R, sigma, vX, icity, factor);
 
             Vector3f delta = cd1 * k1 + cd3 * k3 + cd4 * k4 + cd5 * k5 + cd6 * k6;
             
@@ -200,7 +160,7 @@ vect rka_iter(double R, double sigma, double vX, double seed_x, double seed_y, d
 
         r += r_change;
         r_past = r_change / r_mag;
-        double val = eigen_solve_val(f(r, R, sigma, vX), icity);
+        double val = eigen_solve_val(r, R, sigma, icity);
 
         r_change_vect.x[i] = r(0);
         r_change_vect.y[i] = r(1);
