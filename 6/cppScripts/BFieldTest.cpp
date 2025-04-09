@@ -28,38 +28,34 @@ mat f(double x, double y, double z, double R, double S, double vX) {
         mat BM;
     
         // Precompute common
-        double x2 = x * x;
-        double y2 = y * y;
-        double z2 = z * z;
-        double rS = R * S;
-        double rS2 = rS * rS;
-        double r = std::sqrt(x2 + y2 + z2);
-        double r2 = std::pow(r, 2);
-        double r3 = std::pow(r, 3);
-        double S2 = S*S;
-        double cothRS = coth(rS);
-        double sechRS = sech(rS);
-        double tanhRS = std::tanh(rS);
-    
-        double sechRPlus = sech(S * (R + r));
-        double sechRMinus = sech(S * (-R + r));
-        double sechRPlus2 = sechRPlus * sechRPlus;
-        double sechRMinus2 = sechRMinus * sechRMinus;
-        double tanhRPlus = std::tanh(S * (R + r));
-        double tanhRMinus = std::tanh(S * (-R + r));
-    
-        // Matrix components (1st row)
-        B(0, 0) =  .25 * cothRS * ((S*x*y * (sechRMinus2 - sechRPlus2) / r3) + (2 * S2 * x * y * ((sechRMinus2 * tanhRMinus) - (sechRPlus2 * tanhRPlus)) / r2));
-        B(0, 1) = -.25 * cothRS * ((S*x2 * (sechRMinus2 - sechRPlus2) / r3)  + (2 * S2 * x2    * ((sechRMinus2 * tanhRMinus) - (sechRPlus2 * tanhRPlus)) / r2) + (S * (sechRPlus2 - sechRMinus2) / r));
-        B(0, 2) = -1.0 * B(0, 0) + .25 * cothRS * ((S*x2 * (sechRMinus2 - sechRPlus2) / r3) + (S * (sechRPlus2 - sechRMinus2) / r) + (2 * S2 * x2 * (sechRMinus2*tanhRMinus - sechRPlus2*tanhRPlus) / r2));
-        // 2nd row
-        B(1, 0) =  .25 * cothRS * ((S*y2 * (sechRMinus2 - sechRPlus2) / r3)  + (2 * S2 * y2    * ((sechRMinus2 * tanhRMinus) - (sechRPlus2 * tanhRPlus)) / r2) + (S * (sechRPlus2 - sechRMinus2) / r));
-        B(1, 1) = -1.0 * B(0, 0);
-        B(1, 2) = -1.0 * B(1, 1) - .25 * cothRS * ((S*y2 * (sechRMinus2 - sechRPlus2) / r3) + S* (sechRPlus2 - sechRMinus2) / r + 2 * S2 * y2 * ((sechRMinus2 * tanhRMinus) - (sechRPlus2 * tanhRPlus)) / r2);
-        // 3rd row
-        B(2,0) = -.25 * cothRS * (S * (sechRPlus2 - sechRMinus2) / r);
-        B(2,1) = -1.0 * B(2,0);
-        B(2,2) = 0;
+        double r = std::powf(x*x + y*y + z*z, .5);
+        double r2 = r*r;
+        double r3 = r2*r;
+        
+        double secPlus = sech(S*(r+R));
+        double secPlus2 = secPlus * secPlus;
+        double secMin = sech(S*(r-R));
+        double secMin2 = secMin * secMin;
+        double tanhPlus = tanh(S*(r+R));
+        double tanhMin = tanh(S*(r-R));
+        double CRS = coth(R*S);
+
+        double secMinPlus2 = secMin2 - secPlus2;
+        double secMinPlus2Tanh = (secMin2*tanhMin) - (secPlus2*tanhPlus);
+
+        // Compute matrix (row, col)
+        B(0, 0) = 0.0;
+        B(0, 1) = .25 * CRS * S * x * z * (S * secMinPlus2 / r3 + 2 * S*secMinPlus2Tanh / r2);
+        B(0, 2) = -.25 * CRS * S * x * y * (S * secMinPlus2 / r3 + 2 * S*secMinPlus2Tanh / r2);
+
+        B(1, 0) = 0.0;
+        B(1, 1) = .25 * CRS * S * y * z * (S * secMinPlus2 / r3 + 2 * S*secMinPlus2Tanh / r2);
+        B(1, 2) = -.25 * CRS * S * (y * y * (S * secMinPlus2 / r3 + 2 * S*secMinPlus2Tanh / r2) - secMinPlus2/r);
+
+        B(2, 0) = 0.0;
+        B(2, 1) = .25 * CRS * S * (z * z * (S * secMinPlus2 / r3 + 2 * S*secMinPlus2Tanh / r2) - secMinPlus2/r);
+        B(2, 2) = .25 * CRS * S * y * z * (S * secMinPlus2 / r3 + 2 * S*secMinPlus2Tanh / r2);
+
 
         // Process for output
         BM.m[0][0] = B(0,0);

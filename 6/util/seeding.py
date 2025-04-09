@@ -73,20 +73,20 @@ def helical_seeds(start_rad, spacing, seeds): #3
 
     return x_list, y_list, z_list
 
-def random_seedsgsdg(seeds, distance):
+def random_seeds(seeds, distance):
     x_list = []
     y_list = []
     z_list = []
 
     for i in range(seeds):
         # Quadrant 1
-        x_list += [np.random.random() * distance]
-        y_list += [np.random.random() * distance]
-        z_list += [0]
+        x_list += [np.random.random() * distance - distance/2]
+        y_list += [np.random.random() * distance - distance/2]
+        z_list += [np.random.random() * distance - distance/2]
 
     return x_list, y_list, z_list
 
-def random_seeds(seeds, distance):
+def frandom_seeds(seeds, distance):
     x_list = []
     y_list = []
     z_list = []
@@ -115,26 +115,25 @@ def random_seeds(seeds, distance):
         x_list += [x]
         y_list += [-1 * y]
         z_list += [z]#[np.random.random() * distance - distance / 2]
-        if False:
-            # Quadrant 5
-            x_list += [x]
-            y_list += [y]
-            z_list += [-1 * z]#[np.random.random() * distance - distance / 2]
+        # Quadrant 5
+        x_list += [x]
+        y_list += [y]
+        z_list += [-1 * z]#[np.random.random() * distance - distance / 2]
 
-            # Quadrant 6
-            x_list += [-1 * x]
-            y_list += [y]
-            z_list += [-1 * z]#[np.random.random() * distance - distance / 2]
+        # Quadrant 6
+        x_list += [-1 * x]
+        y_list += [y]
+        z_list += [-1 * z]#[np.random.random() * distance - distance / 2]
 
-            # Quadrant 7
-            x_list += [-1 * x]
-            y_list += [-1 * y]
-            z_list += [-1 * z]#[np.random.random() * distance - distance / 2]
+        # Quadrant 7
+        x_list += [-1 * x]
+        y_list += [-1 * y]
+        z_list += [-1 * z]#[np.random.random() * distance - distance / 2]
 
-            # Quadrant 8
-            x_list += [x]
-            y_list += [-1 * y]
-            z_list += [-1 * z]#[np.random.random() * distance - distance / 2]
+        # Quadrant 8
+        x_list += [x]
+        y_list += [-1 * y]
+        z_list += [-1 * z]#[np.random.random() * distance - distance / 2]
 
     return x_list, y_list, z_list
 
@@ -171,9 +170,9 @@ def seed(seed_type,distance):
     rotate = False
     if seed_type == 0: # Plane
             
-        xSeeds = 11
-        ySeeds = 1
-        zSeeds = 7
+        xSeeds = 6
+        ySeeds = 6
+        zSeeds = 6
 
         if rotate:
             title = "Plane_x%sy%sz%s_Spaced:%s_RKA" % (xSeeds, ySeeds, zSeeds, distance)
@@ -213,7 +212,7 @@ def seed(seed_type,distance):
 
         x0, y0, z0 = helical_seeds(start_rad, spacing, seeds)
     elif seed_type == 4:
-        x0, y0, z0 = random_seeds(100, distance)
+        x0, y0, z0 = random_seeds(30, distance)
         title = "Random_RKA"
     elif seed_type == 5:
         x0, y0, z0 = rect(10,5)

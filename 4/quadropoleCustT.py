@@ -19,7 +19,7 @@ title, x0, y0, z0 = seed(4,10) # 0: Plane 1: Circular 2: Spherical 3: Helical 4:
 
 curve = {'x':[],'y':[],'z':[],'m':[],'c':[]} # Base dict
 seeds = len(x0)
-num_its = 800 # Iterations per seed point
+num_its = 400 # Iterations per seed point
 lim = 15 # x y bounds for plot
 delta_0 = 10e-5 # Min deviation from next step
 h0 = 10e-3 #Starting step size
@@ -57,8 +57,8 @@ if color:
     pos_fig.colorbar(cm.ScalarMappable(cmap='jet', norm = pos_norm), ax=pos_ax, label = 'pos eigenvalue')
     neg_fig.colorbar(cm.ScalarMappable(cmap='jet', norm = neg_norm), ax=neg_ax, label = 'neg eigenvalue * -1')
 
-for sepX in [.1,2,6,10]:
-    for t in [0,.25,.5,.75,1]:
+for sepX in [.1]:
+    for t in [.5]:
         for i in range(seeds):
             for icity in [1,-1]:
                 # Starting point of each field line

@@ -15,20 +15,43 @@ Matrix3f f2(const Vector3f& r_V, double sepX, double sepY, double sinT, double c
     Eigen::Matrix3f e12;
     Eigen::Matrix3f e13;
     Eigen::Matrix3f e14;    
+    Eigen::Matrix3f e21;
+    Eigen::Matrix3f e22;
+    Eigen::Matrix3f e23;
+    Eigen::Matrix3f e24;   
+    Eigen::Matrix3f e31;
+    Eigen::Matrix3f e32;
+    Eigen::Matrix3f e33;
+    Eigen::Matrix3f e34;  
 
-    double x00 = r_V(0) + sepX;
+    //      0
+    //  3       1
+    //      2
+
+    double x00 = r_V(0);
     double x01 = r_V(1) + sepY;
     double x02 = r_V(2);
-    
-    double x10 = r_V(0) - sepX;
-    double x11 = r_V(1) - sepY;
-    double x12 = r_V(2);
     double r02 = (x00 * x00 + x01 * x01);
     double r05 = std::pow(x00 * x00 + x01 * x01, 2.5);
+    
+    double x10 = r_V(0) + sepX;
+    double x11 = r_V(1);
+    double x12 = r_V(2);
     double r12 = (x10 * x10 + x11 * x11);
     double r15 = std::pow(x10 * x10 + x11 * x11, 2.5);
+
+    double x20 = r_V(0);
+    double x21 = r_V(1) - sepY;
+    double x22 = r_V(2);
+    double r22 = (x20 * x20 + x21 * x21);
+    double r25 = std::pow(x20 * x20 + x21 * x21, 2.5);
+
+    double x30 = r_V(0) - sepX;
+    double x31 = r_V(1);
+    double x32 = r_V(2);    
+    double r32 = (x30 * x30 + x31 * x31);
+    double r35 = std::pow(x30 * x30 + x31 * x31, 2.5);
     
-    double aI = 1.0;
     double IpqXpXq0 = ((x00 * x00 - x01 * x01));
 
 
@@ -69,10 +92,48 @@ Matrix3f f2(const Vector3f& r_V, double sepX, double sepY, double sinT, double c
     e14 << x10 * x10 * IpqXpXq1, x10 * x11 * IpqXpXq1, 0.0,
             x10 * x11 * IpqXpXq1, x11 * x11 * IpqXpXq1, 0.0,
             0.0, 0.0, 0.0;
+
+    double IpqXpXq2 = (I11 * x20 * x20) + 2 * (I12 * x20 * x21) + (I22 * x21 * x21);
+                   
+    e21 << I11, I12, 0,
+        I12, I22, 0,
+        0, 0, 0;
+
+    e22 << (x20 * x20 * I11) + (x20 * x21 * I12), .5 * x20 * (x20 * I12  + x21 * I11) + .5 * x21 * (x20 * I22  + x21 * I12), 0,
+            .5 * x20 * (x20 * I12  + x21 * I11) + .5 * x21 * (x20 * I22  + x21 * I12), (x20 * x21 * I12) + (x21 * x21 * I22), 0,
+            0, 0, 0;
+    
+    e23 << IpqXpXq2, 0.0, 0.0,
+            0.0, IpqXpXq2, 0.0,
+            0.0, 0.0, IpqXpXq2;
+
+    e24 << x20 * x20 * IpqXpXq2, x20 * x21 * IpqXpXq2, 0.0,
+           x20 * x21 * IpqXpXq2, x21 * x21 * IpqXpXq2, 0.0,
+           0.0, 0.0, 0.0;
+
+    double IpqXpXq3 = (I11 * x30 * x30) + 2 * (I12 * x30 * x31) + (I22 * x31 * x31);
+            
+    e21 << I11, I12, 0,
+           I12, I22, 0,
+           0, 0, 0;
+
+    e22 << (x30 * x30 * I11) + (x30 * x31 * I12), .5 * x30 * (x30 * I12  + x31 * I11) + .5 * x31 * (x30 * I22  + x31 * I12), 0,
+            .5 * x30 * (x30 * I12  + x31 * I11) + .5 * x31 * (x30 * I22  + x31 * I12), (x30 * x31 * I12) + (x31 * x31 * I22), 0,
+            0, 0, 0;
+    
+    e23 << IpqXpXq3, 0.0, 0.0,
+            0.0, IpqXpXq3, 0.0,
+            0.0, 0.0, IpqXpXq3;
+
+    e24 << x30 * x30 * IpqXpXq3, x30 * x31 * IpqXpXq3, 0.0,
+            x30 * x31 * IpqXpXq3, x31 * x31 * IpqXpXq3, 0.0,
+            0.0, 0.0, 0.0;
     
 
-            return ((-6 * e01) / (r05) + (60 * e02 + 15 * e03) / (r05 * r02) + (-105 * e04) / (r05 * r02 * r02)) +
-                   ((-6 * e11) / (r15) + (60 * e12 + 15 * e13) / (r15 * r12) + (-105 * e14) / (r15 * r12 * r12));
+    return ((-6 * e01) / (r05) + (60 * e02 + 15 * e03) / (r05 * r02) + (-105 * e04) / (r05 * r02 * r02)) +
+           ((-6 * e11) / (r15) + (60 * e12 + 15 * e13) / (r15 * r12) + (-105 * e14) / (r15 * r12 * r12)) +
+           ((-6 * e21) / (r25) + (60 * e22 + 15 * e23) / (r25 * r22) + (-105 * e24) / (r25 * r22 * r22)) + 
+           ((-6 * e31) / (r35) + (60 * e32 + 15 * e33) / (r35 * r32) + (-105 * e34) / (r35 * r32 * r32));
 
     
 }
@@ -97,6 +158,11 @@ double eigen_solve_val(Matrix3f E_temp, int icity) {
             
         }
     }
+
+    if (maxIndex < 0) {
+        
+        return 0.0;
+    } 
 
     return eigenvalues(maxIndex).real();
     }

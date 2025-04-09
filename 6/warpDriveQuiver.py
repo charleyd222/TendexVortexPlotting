@@ -33,7 +33,7 @@ def e1(x, y, z, R, S):
     DY = ((S*y * sech(S*(R+r)) * sech(S*(R+r))) - (S*y * sech(S*(R-r)) * sech(S*(R-r)))) / (r * np.tanh(R*S) * -2.0)
     DZ = ((S*z * sech(S*(R+r)) * sech(S*(R+r))) - (S*z * sech(S*(R-r)) * sech(S*(R-r)))) / (r * np.tanh(R*S) * -2.0)
 
-    return 0, DY/DZ, 1
+    return 0, -1 * DZ, DY
 
 def e2(x, y, z, R, S):
     return 1,0,0
@@ -44,11 +44,11 @@ def e3(x, y, z, R, S):
     DY = ((S*y * sech(S*(R+r)) * sech(S*(R+r))) - (S*y * sech(S*(R-r)) * sech(S*(R-r)))) / (r * np.tanh(R*S) * -2.0)
     DZ = ((S*z * sech(S*(R+r)) * sech(S*(R+r))) - (S*z * sech(S*(R-r)) * sech(S*(R-r)))) / (r * np.tanh(R*S) * -2.0)
 
-    return 0, -DY/DZ, 1
+    return 0, DY, DZ
 
-N=20
+N=15
 # Define the grid for x, y, z
-x = np.linspace(-10, 10, N)
+x = np.linspace(-5, 5, N)
 y = np.linspace(-5, 5, N)
 z = np.linspace(-5, 5, N)
 X, Y, Z = np.meshgrid(x, y, z)
@@ -98,9 +98,9 @@ ax.quiver(X, Y, Z, E2_x, E2_y, E2_z, length=0.1, color='r', linewidth=0.5)
 ax.quiver(X, Y, Z, E3_x, E3_y, E3_z, length=0.1, color='b', linewidth=0.5)
 
 # Labels and title
-ax.set_xlabel('X-axis')
-ax.set_ylabel('Y-axis')
-ax.set_zlabel('Z-axis')
+ax.set_xlabel('X')
+ax.set_ylabel('Y')
+ax.set_zlabel('Z')
 ax.set_title('3D Quiver Plot of f1, f2, f3 with Normalized Directions e1, e2, e3')
 
 plt.show()

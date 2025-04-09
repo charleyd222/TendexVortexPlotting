@@ -1,6 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider
+import matplotlib.colors as mcolors
+
 
 def sech(x):
     return 1/np.cosh(x)
@@ -24,10 +26,13 @@ x_fixed = 0  # Initial x value
 R_fixed = 5  # Initial R value
 S_fixed = 5  # Initial S value
 
+norm = mcolors.LogNorm(vmin=10e-43, vmax=10e0)
+
 # Create the 2D heatmap with sliders
-fig, ax2 = plt.subplots(figsize=(8, 6))
-heatmap = ax2.contourf(y_grid, z_grid, f(x_fixed, y_grid, z_grid, R_fixed, S_fixed), levels=100, cmap='inferno')
-cbar = fig.colorbar(heatmap, ax=ax2, label='Eigen Value')
+fig, ax2 = plt.subplots()
+
+heatmap = ax2.contourf(y_grid, z_grid, f(x_fixed, y_grid, z_grid, R_fixed, S_fixed), levels=100, cmap='inferno', norm=norm)
+cbar = fig.colorbar(heatmap, ax=ax2, label='Eigen Value', norm = norm)
 ax2.set_xlabel('Y-axis')
 ax2.set_ylabel('Z-axis')
 ax2.set_title(f'Heatmap at x={x_fixed}, R={R_fixed}, S={S_fixed}')
@@ -47,7 +52,7 @@ def update(val):
     R_fixed = slider_R.val
     S_fixed = slider_S.val
     ax2.clear()
-    new_heatmap = ax2.contourf(y_grid, z_grid, f(x_fixed, y_grid, z_grid, R_fixed, S_fixed), levels=100, cmap='inferno')
+    new_heatmap = ax2.contourf(y_grid, z_grid, f(x_fixed, y_grid, z_grid, R_fixed, S_fixed), levels=100, cmap='inferno',norm=norm)
     ax2.set_xlabel('Y-axis')
     ax2.set_ylabel('Z-axis')
     ax2.set_title(f'Heatmap at x={x_fixed}, R={R_fixed}, S={S_fixed}')
