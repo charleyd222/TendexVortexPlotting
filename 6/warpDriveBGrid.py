@@ -20,7 +20,7 @@ def f(x,y,z,R,S): # Negative E Val
     DyDyB = -.5 * coth(R*S) * S * (y * y * (sechMinPlus / (r**3) + (2 * S * sechMinPlusTanh / r**2)) + (S * -1 * sechMinPlus / r))
     DzDzB = -.5 * coth(R*S) * S * (z * z * (sechMinPlus / (r**3) + (2 * S * sechMinPlusTanh / r**2)) + (S * -1 * sechMinPlus / r))
 
-    return .5 * np.sqrt(np.abs((DzDyB*DzDyB) - DyDyB*DzDzB))
+    return .5 * np.sqrt((DzDyB*DzDyB) - DyDyB*DzDzB)
 
 N=200
 # Define the grid

@@ -129,7 +129,7 @@ struct vect {
     int its;
 };
 
-vect rka_iter(double R, double sigma, double vX, double seed_x, double seed_y, double seed_z, int num_its, int icity, double ending_tolerance, double delta_0, double safety, double h0) {    
+vect rka_iter(double R, double sigma, double vX, double seed_x, double seed_y, double seed_z, int num_its, int icity, double ending_tolerance, double delta_0, double safety, double h0, double d) {    
     static const double a2 = 1.0 / 5.0, a3 = 3.0 / 10.0, a4 = 3.0 / 5.0, a5 = 1.0, a6 = 7.0 / 8.0;
     static const double b21 = 1.0 / 5.0;
     static const double b31 = 1.0 / 40.0, b32 = 9.0 / 40.0;
