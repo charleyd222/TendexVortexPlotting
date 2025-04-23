@@ -1,4 +1,6 @@
 import numpy as np
+import matplotlib.pyplot as plt
+
 # Funcs to generate seeds
 def plane_seeds(xSeeds, ySeeds, zSeeds, seed_distance): #0
     totX_dist = (xSeeds - 1) / 2
@@ -165,8 +167,60 @@ def rect(xseeds, radius):
         z0 += [0.,0.,0.,0.]
 
     return x0, y0, z0
-        
-def seed(seed_type,distance, num):
+
+def sphericalRand(seeds, radius):
+    x = []
+    y = []
+    z = []
+    for i in range(seeds//8):
+
+        theta = np.random.rand() * np.pi/2
+        phi = np.random.rand() * np.pi/2
+
+        theta += np.pi/2
+        x += [radius * np.cos(theta) * np.sin(phi)]
+        y += [radius * np.sin(theta) * np.sin(phi)]
+        z += [radius * np.cos(phi)]
+
+        theta += np.pi/2
+        x += [radius * np.cos(theta) * np.sin(phi)]
+        y += [radius * np.sin(theta) * np.sin(phi)]
+        z += [radius * np.cos(phi)]
+
+        theta += np.pi/2
+        x += [radius * np.cos(theta) * np.sin(phi)]
+        y += [radius * np.sin(theta) * np.sin(phi)]
+        z += [radius * np.cos(phi)]
+
+        theta += np.pi/2
+        x += [radius * np.cos(theta) * np.sin(phi)]
+        y += [radius * np.sin(theta) * np.sin(phi)]
+        z += [radius * np.cos(phi)]
+
+        phi += np.pi/2
+        theta += np.pi/2
+        x += [radius * np.cos(theta) * np.sin(phi)]
+        y += [radius * np.sin(theta) * np.sin(phi)]
+        z += [radius * np.cos(phi)]
+
+        theta += np.pi/2
+        x += [radius * np.cos(theta) * np.sin(phi)]
+        y += [radius * np.sin(theta) * np.sin(phi)]
+        z += [radius * np.cos(phi)]
+
+        theta += np.pi/2
+        x += [radius * np.cos(theta) * np.sin(phi)]
+        y += [radius * np.sin(theta) * np.sin(phi)]
+        z += [radius * np.cos(phi)]
+
+        theta += np.pi/2
+        x += [radius * np.cos(theta) * np.sin(phi)]
+        y += [radius * np.sin(theta) * np.sin(phi)]
+        z += [radius * np.cos(phi)]
+
+    return(x,y,z)
+
+def seed(seed_type,distance, num = 10):
     rotate = False
     if seed_type == 0: # Plane
             
@@ -217,10 +271,24 @@ def seed(seed_type,distance, num):
     elif seed_type == 5:
         x0, y0, z0 = rect(10,5)
         title = "Outline seeding. RK Adaptive"
+    elif seed_type == 6:
+        x0, y0, z0 = sphericalRand(num, distance)
 
-        
-    
+        title = "Spherical rand seeding"
+
     return title, x0, y0, z0
 
 if __name__ == '__main__':
-    rect(10, 10)
+    x,y,z = sphericalRand(100, 1)
+
+    lim = 1.5
+
+    pos_fig = plt.figure(1)
+    pos_ax = pos_fig.add_subplot(projection='3d')   
+
+    pos_ax.set_xlim(-lim,lim)
+    pos_ax.set_ylim(-lim,lim)
+    pos_ax.set_zlim(-lim,lim)
+
+    pos_ax.scatter(x,y,z)
+    plt.show()

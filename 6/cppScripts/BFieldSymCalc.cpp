@@ -177,7 +177,12 @@ vect rka_iter(double R, double sigma, double vX, double seed_x, double seed_y, d
         r_change_vect.z[i] = r(2);// * factor;
         r_change_vect.m[i] = val;
 
-        if (abs(r.norm()) < ending_tolerance) {
+        double rNorm = abs(r.norm());
+
+        if (rNorm < ending_tolerance) {
+            break;
+        }
+        if (rNorm > R*2) {
             break;
         }
     
