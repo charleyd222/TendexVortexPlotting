@@ -6,7 +6,7 @@
 using namespace std;
 using namespace Eigen;
 
-Matrix3f f(const Vector3f& r_V) {
+Matrix3f f(const Vector3f& r_V, double w) {
     Eigen::Matrix3f e1;
     Eigen::Matrix3f e11;
     Eigen::Matrix3f e12;
@@ -16,7 +16,6 @@ Matrix3f f(const Vector3f& r_V) {
     Eigen::Matrix3f e2;
     Eigen::Matrix3f e3;
     Eigen::Matrix3f e4;
-    double w = 3.1415 / 4;
     
     double x = r_V(0);
     double y = r_V(1);
@@ -30,7 +29,6 @@ Matrix3f f(const Vector3f& r_V) {
     double w2 = w*w;
     
     double aI = std::cos(w); 
-    double IpqXpXq = (aI * (x * x - y * y));
 
     // Term 1
     e1 << 105 * aI * (x*x*x*x - x*x * y*y) / (r5*r4) + aI * (15 * y*y - 75 * x*x) / (r5*r2) + 6 * aI / r5, 105 * aI * (x*x*x*y - x*y*y*y) / (r5*r4), 105 * aI * (x*x*x*z - x*z * y*y) / (r5*r4) - aI * 30 * x*z / (r5*r2),
@@ -43,16 +41,11 @@ Matrix3f f(const Vector3f& r_V) {
           -3.0 * aI * w2 * x * z / r5, 3.0 * aI * w2 * y * z / r5, 3.0 * aI * w2 * (x * x - y * y) / r5;
 
     // Term 3
-    // With D/Dxp
-    //e3 << -w2 * aI * aI * 2 * (4 * x*x / r6 - 1/r4), 8 * -w2 * aI * aI * x*y / r6, 4 * -w2 * aI * aI * x*z / r6,
-    //      8 * -w2 * aI * aI * x*y / r6, -w2 * aI * aI * 2 * (4 * y*y / r6 - 1/r4), 4 * -w2 * aI * aI * y*z / r6,
-    //      4 * -w2 * aI * aI * x*z / r6, 4 * -w2 * aI * aI * y*z / r6, 0.0;
-
-    e3 << w2 * aI * aI * 2 * x / r4, w2 * aI * aI * (x+y) / r4, w2 * aI * aI * z / r4,
-          w2 * aI * aI * (x+y) / r4, w2 * aI * aI * 2 * y / r4, w2 * aI * aI * z / r4,
-          w2 * aI * aI * z / r4, w2 * aI * aI * z / r4, 0.0;
-
+    e3 << -w2 * aI * (6.0*x*x / r5 - 2/r3), 0.0, -w2 * aI * 3.0*x*z / r5,
+          0.0, -w2 * aI * (-6.0*y*y / r5 + 2/r3), w2 * aI * 3.0*y*z / r5,
+          -w2 * aI * 3.0*x*z / r5, w2 * aI * 3.0*y*z / r5, 0;
     // Term 4
+
     e4 << -1.0 * aI * w2*w2 / r, 0.0, 0.0,
           0.0, 1.0 * aI * w2*w2 / r, 0.0,
           0.0, 0.0, 0.0;
@@ -119,7 +112,7 @@ struct vect {
     int its;
 };
 
-vect rka_iter(double seed_x, double seed_y, double seed_z, int num_its, int icity, double ending_tolerance, double delta_0, double safety, double h0) {    
+vect rka_iter(double seed_x, double seed_y, double seed_z, int num_its, int icity, double ending_tolerance, double delta_0, double safety, double h0, double w, double factor, double dist) {    
     static const double a2 = 1.0 / 5.0, a3 = 3.0 / 10.0, a4 = 3.0 / 5.0, a5 = 1.0, a6 = 7.0 / 8.0;
     static const double b21 = 1.0 / 5.0;
     static const double b31 = 1.0 / 40.0, b32 = 9.0 / 40.0;
@@ -143,23 +136,23 @@ vect rka_iter(double seed_x, double seed_y, double seed_z, int num_its, int icit
 
         while (sizing) {
             // Compute Runge-Kutta stages
-            Matrix3f E1 = f(r);
-            Vector3f k1 = h * eigen_solve(E1, icity);
+            Matrix3f E1 = f(r, w);
+            Vector3f k1 = h * factor * eigen_solve(E1, icity);
 
-            Matrix3f E2 = f(r + b21 * k1);
-            Vector3f k2 = h * eigen_solve(E2, icity);
+            Matrix3f E2 = f(r + b21 * k1, w);
+            Vector3f k2 = h * factor * eigen_solve(E2, icity);
 
-            Matrix3f E3 = f(r + b31 * k1 + b32 * k2);
-            Vector3f k3 = h * eigen_solve(E3, icity);
+            Matrix3f E3 = f(r + b31 * k1 + b32 * k2, w);
+            Vector3f k3 = h * factor * eigen_solve(E3, icity);
 
-            Matrix3f E4 = f(r + b41 * k1 + b42 * k2 + b43 * k3);
-            Vector3f k4 = h * eigen_solve(E4, icity);
+            Matrix3f E4 = f(r + b41 * k1 + b42 * k2 + b43 * k3, w);
+            Vector3f k4 = h * factor * eigen_solve(E4, icity);
 
-            Matrix3f E5 = f(r + b51 * k1 + b52 * k2 + b53 * k3 + b54 * k4);
-            Vector3f k5 = h * eigen_solve(E5, icity);
+            Matrix3f E5 = f(r + b51 * k1 + b52 * k2 + b53 * k3 + b54 * k4, w);
+            Vector3f k5 = h * factor * eigen_solve(E5, icity);
 
-            Matrix3f E6 = f(r + b61 * k1 + b62 * k2 + b63 * k3 + b64 * k4 + b65 * k5);
-            Vector3f k6 = h * eigen_solve(E6, icity);
+            Matrix3f E6 = f(r + b61 * k1 + b62 * k2 + b63 * k3 + b64 * k4 + b65 * k5, w);
+            Vector3f k6 = h * factor * eigen_solve(E6, icity);
 
             Vector3f delta = cd1 * k1 + cd3 * k3 + cd4 * k4 + cd5 * k5 + cd6 * k6;
             
@@ -187,14 +180,18 @@ vect rka_iter(double seed_x, double seed_y, double seed_z, int num_its, int icit
 
         r += r_change;
         r_past = r_change / r_mag;
-        double val = eigen_solve_val(f(r), icity);
+        double val = eigen_solve_val(f(r, w), icity);
 
         r_change_vect.x[i] = r(0);
         r_change_vect.y[i] = r(1);
         r_change_vect.z[i] = r(2);
         r_change_vect.m[i] = val;
 
-        if (abs(r.norm()) < ending_tolerance) {
+        double rNorm = abs(r.norm());
+
+        if (rNorm < ending_tolerance) {
+            break;
+        } else if (rNorm > dist) {
             break;
         }
     

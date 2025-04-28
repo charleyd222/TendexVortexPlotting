@@ -20,3 +20,12 @@ Same as 4 but animated instead of pictures
 
 # 6
 Plots E and B field for the warp drive metric
+
+# 7
+Time dependent quadropole plotting
+
+# 8
+Twist calculations, including comparing numerical derivatives to analytic
+
+# WolframFiles
+Calculations of Tendex and vortex fields for quadropole and warp drive in wolfram mathematica. Additionally contains python file that loads a mathematica function into C++

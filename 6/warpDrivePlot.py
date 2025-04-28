@@ -22,7 +22,7 @@ title, x0, y0, z0 = seed(6, 1, 100) # 0: Plane 1: Circular 2: Spherical 3: Helic
 #z0 = [-.5]
 curve = {'x':[],'y':[],'z':[],'f':[],'m':[],'c':[],'lg':[]}
 seeds = len(x0)
-num_its = 50
+num_its = 25
 delta_0 = 10e-6
 h0 = 10e-3
 safety = .9
@@ -31,7 +31,7 @@ pos_color = 'red'
 neg_color = 'blue'
 icity = 1
 R = 1
-sigma = 3
+sigma = 1
 vX = 1
 
 # load C++
@@ -39,7 +39,7 @@ EBool = False
 if EBool:
     rka_iter = CDLL("./cppScripts/EFieldCalc").rka_iter
 else:
-    rka_iter = CDLL("./cppScripts/BFieldCalc").rka_iter
+    rka_iter = CDLL("./cppScripts/BFieldSymCalc").rka_iter
 rka_iter.argtypes = [c_double, c_double, c_double, c_double, c_double, c_double, c_int, c_int, c_double, c_double, c_double, c_double, c_double]
 rka_iter.restype = vect
 
