@@ -13,18 +13,29 @@ from util.seeding import seed
 start = dt.now()
 
 class vect(Structure):
-    _fields_ = [('x', c_double*10000), ('y', c_double*10000), ('z', c_double*10000), ('m', c_double*10000), ('its', c_int)]
+    _fields_ = [('x', c_double*10000), 
+                ('y', c_double*10000), 
+                ('z', c_double*10000), 
+                ('m', c_double*10000), 
+                ('its', c_int), 
+                ('hAvg', c_double)]
 
 #Value setup
-dist = 1
-title, x0, y0, z0 = seed(4,dist,50) # 0: Plane 1: Circular 2: Spherical 3: Helical 4: Random
+dist = 2
+title, x0, y0, z0 = seed(4,dist,40) # 0: Plane 1: Circular 2: Spherical 3: Helical 4: Random
 curve = {'x':[],'y':[],'z':[],'f':[],'m':[],'c':[],'lg':[]}
+#x0 = [4,4,4,4,4]
+#y0 = [2.6,3,4,5,6]
+#z0 = [0,0,0,0,0]
+#x0 = [2.]
+#y0 = [2.]
+#z0 = [2.]
 seeds = len(x0)
-num_its = 200
-delta_0 = 10e-5
-h0 = 10e-3
+num_its = 300
+delta_0 = 10e-1
+h0 = .008
 safety = .98
-ending_tolerance = .2
+ending_tolerance = .1
 w = .5
 
 # load C++
@@ -37,12 +48,14 @@ fig = plt.figure(1)
 ax = fig.add_subplot(projection='3d')
 
 #Color maps
-norm = mcolors.SymLogNorm(.01, vmin=-10e1, vmax=10e1)
+norm = mcolors.SymLogNorm(.01, vmin=-10e1, vmax=10e7)
 cmap = mcolors.LinearSegmentedColormap.from_list('red_grey_blue', ['red', 'grey', 'blue'])
+
+hAvgTotal = 0
 for i in range(seeds):
     #print(i)
-    for icity in [-1]:
-        for factor in [-1,1]:
+    for icity in [1]:
+        for factor in [1]:
             # Starting point of each field line
             x, y, z = x0[i], y0[i], z0[i]
         
@@ -53,10 +66,13 @@ for i in range(seeds):
             y = vect_c.y[0:its]
             z = vect_c.z[0:its]
             m = np.abs(np.array(vect_c.m[0:its])) * icity
+            hAvgTotal += vect_c.hAvg
 
             lc = colorline(ax, x, y, z, m, norm = norm, cmap=cmap)
 
 print(dt.now() - start) 
+print('Average h:',hAvgTotal/(i+1))
+
 
 lim = dist*1.5
 
@@ -66,8 +82,9 @@ ax.set_zlim(-lim,lim)
 ax.set_xlabel('X')
 ax.set_ylabel('Y')
 ax.set_zlabel('Z')
-ax.set_title('Rotating E Field, %s' %(w))
+ax.set_title('Rotating E Field, w: %s' %(w))
 fig.colorbar(cm.ScalarMappable(cmap=cmap, norm = norm), ax=ax, label = 'eigenvalue')
+#ax.scatter(x0,y0,z0)
 
 plt.show()
 fig.savefig('neg.png', dpi=300)

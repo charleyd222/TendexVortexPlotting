@@ -78,7 +78,7 @@ fig, ax = plt.subplots(1)
 fig.colorbar(cm.ScalarMappable(cmap='jet', norm = norm), ax=ax, label = 'pos eigenvalue')
 
 # Setup animation
-if True:
+if False:
     title = 'IterAngleSmall'
     ani = animation.FuncAnimation(fig, partial(frame, sep = 0.001), frames=frame_num)
 else:

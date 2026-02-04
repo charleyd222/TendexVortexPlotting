@@ -1,0 +1,10 @@
+---
+triple:          'arm64-apple-darwin'
+binary-path:     '/Users/cdavis/Desktop/Work/Research/TendexVortexPlotting/10/determinantCalc'
+relocations:
+  - { offsetInCU: 0x26, offset: 0x26, size: 0x8, addend: 0x0, symName: _f1Quadropole, symObjAddr: 0x0, symBinAddr: 0x10000302C, symSize: 0x528 }
+  - { offsetInCU: 0x1BF76, offset: 0x1BF76, size: 0x8, addend: 0x0, symName: __ZN5Eigen8internal21dense_assignment_loopINS0_31generic_dense_assignment_kernelINS0_9evaluatorINS_6MatrixIfLi3ELi3ELi0ELi3ELi3EEEEENS3_INS_13CwiseBinaryOpINS0_13scalar_sum_opIffEEKNS7_IS9_KNS7_IS9_KNS7_INS0_18scalar_quotient_opIffEEKNS7_INS0_17scalar_product_opIffEEKNS_14CwiseNullaryOpINS0_18scalar_constant_opIfEEKS5_EESH_EESJ_EEKNS7_ISB_KNS7_IS9_SL_SL_EESJ_EEEESN_EESV_EEEENS0_9assign_opIffEELi0EEELi3ELi0EE3runERS10_, symObjAddr: 0x850, symBinAddr: 0x10000387C, symSize: 0x6DC }
+  - { offsetInCU: 0x21479, offset: 0x21479, size: 0x8, addend: 0x0, symName: _f1Quadropole, symObjAddr: 0x0, symBinAddr: 0x10000302C, symSize: 0x528 }
+  - { offsetInCU: 0x22AD1, offset: 0x22AD1, size: 0x8, addend: 0x0, symName: _fCustomT2Quadropole, symObjAddr: 0x528, symBinAddr: 0x100003554, symSize: 0x320 }
+  - { offsetInCU: 0x24B4F, offset: 0x24B4F, size: 0x8, addend: 0x0, symName: _main, symObjAddr: 0x848, symBinAddr: 0x100003874, symSize: 0x8 }
+...
