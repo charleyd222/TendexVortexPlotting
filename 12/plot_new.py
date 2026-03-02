@@ -1,38 +1,30 @@
 import matplotlib.pyplot as plt
-import numpy as np
+import numpy as np # type: ignore
 from ctypes import *
 from datetime import datetime as dt
-from util import vect, vis_params, spherical_fibonacci_points, fit_circle
-from sklearn.cluster import DBSCAN
+from util import vect, vis_params, spherical_fibonacci_points, fit_circle, make_vis_param
 
 #Runtime
 start = dt.now()
 
-l = [2,3,4,5,6,7,8,9,10,11,12]
-m = [2,2,2,2,2,2,2,2,2,2,2]
-A = [0.290397, 0.264786, 0.203361, 0.123797, 0.043046, -0.0263431, -0.0780927, -0.111639, -0.130006, -0.137491, -0.13806]
-B = [0.293507, 0.280348, 0.245926, 0.208078, 0.178072, 0.159602, 0.150825, 0.147607, 0.146125, 0.144037, 0.140469]
-
 # Load cpp
 rka_iter = CDLL("./cppScripts/rka_iter").rka_iter
 val_return = CDLL("./cppScripts/rka_iter").val_return
+super_poynting = CDLL("./cppScripts/rka_iter").super_poynting
 
 rka_iter.argtypes = [c_double, c_double, c_double, c_int, c_int, c_double, c_double, c_double, c_double, vis_params]
 val_return.argtypes = [c_double, c_double, c_double, c_int, vis_params, c_int]
+super_poynting.argtypes = [c_double, c_double, c_double, vis_params]
 
 rka_iter.restype = vect
 val_return.restype = c_double
+super_poynting.restype = c_double
 
 # Make data
-model_param = vis_params(
-    M=1.,
-    omega1=1,
-    omega2=1,
-    t=0.,
-    C2=.1,
-    w2=np.pi/4,
-    ell=100
-)
+gauss_dtheta = 0.001
+lMax = 100
+model_param, A, B = make_vis_param(lMax, 'data_gauss_z_0p001_lMax_100.csv')
+
 icity = 1
 l = 500
 
@@ -49,9 +41,9 @@ num_its = 5
 delta_0 = 10e-6
 h0 = 10e-2
 safety = .9
-ending_tolerance = .0001
+ending_tolerance = 0
 
-theta = np.linspace(0, np.pi, n_theta)
+theta = np.linspace(0+ending_tolerance, np.pi-ending_tolerance, n_theta)
 phi = np.linspace(0, 2*np.pi, n_phi)
 Phi, Theta = np.meshgrid(phi, theta)
 
@@ -62,6 +54,7 @@ for i in range(Theta.shape[0]):
         th = Theta[i, j]
         ph = Phi[i, j]
         colors[i, j] = val_return(R, th, ph, icity, model_param, 1)
+        #colors[i, j] = super_poynting(R, th, ph, model_param)
 
 
 fig = plt.figure(figsize=(10,6))
@@ -70,10 +63,10 @@ ax = fig.add_subplot()
 # Label axes
 ax.set_xlabel(r'$\phi$')
 ax.set_ylabel(r'$\theta$')
-ax.set_title('I between 2 and 30 linear combination, dTheta = .1')
+ax.set_title(f'I between 2 and {lMax} linear combination, dTheta = {gauss_dtheta}. Reconstruccted E Eigenvalues')
 #ax.set_xlim(0, 2 * np.pi)
 #ax.set_ylim(0, np.pi)
-if True:
+if False:
     # Draw integral curves
     for i in range(seeds):
         r_val, theta0, phi0 = seeds_r[i], seeds_theta[i], seeds_phi[i]
@@ -95,8 +88,10 @@ m = ax.imshow(
     origin='lower',
     aspect='auto',
     cmap='viridis'
+    #vmin=0, vmax=1
 )
 
 
 print(dt.now() - start)
+plt.colorbar(m)
 plt.show()

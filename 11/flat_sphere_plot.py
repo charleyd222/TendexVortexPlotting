@@ -121,10 +121,14 @@ for label in set(labels):
     pts = points[labels == label]
     xc, yc, r = fit_circle(pts[:,0], pts[:,1])
     if r < .2:
+        t = np.linspace(0,2*np.pi, 100)
         x_cent += [xc]
         y_cent += [yc]
+        plt.plot(r*np.cos(t)+xc, r*np.sin(t)+yc)
 
 plt.scatter(x_cent, y_cent)
+plt.scatter(x, y)
+
 
 if icity == 1:
     fig.colorbar(m, label=r'$\lambda_+$', ax=ax)

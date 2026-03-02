@@ -1,18 +1,15 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
-#include <Eigen/Dense>
+#include <Eigen>
 #include <cfloat>
 #include <complex>
 #include <cmath>
 #include <limits>
-#include "spin_weighted_sh.hpp"
-
+#include <boost/math/special_functions/hypergeometric_pFq.hpp>
 
 using namespace std;
 using namespace Eigen;
-using cd = complex<double>;
-const double PI = 3.1415926535897932384626433832795028841971;
 
 
 struct vis_params {
@@ -23,12 +20,12 @@ struct vis_params {
     double C2;
     double w2;
     int ell;
-    double A_re[4000];
-    double A_im[4000];
-    double B_re[4000];
-    double B_im[4000];
-    double l[4000];
-    double m[4000];
+    double A_re[100];
+    double A_im[100];
+    double B_re[100];
+    double B_im[100];
+    double l[100];
+    double m[100];
     int coef_length;
 };
 
@@ -47,95 +44,130 @@ struct mat {
     double m22;
 };
 
-static void compute_Y_both(double theta, double phi, int l_max,
-                            std::vector<cd>& Yp, std::vector<cd>& Ym)
+inline double factorial(int n)
 {
-    // One persistent SphericalHarmonics object per thread; rebuilt only when
-    // l_max changes (normally never during a run).
-    thread_local std::unique_ptr<sylm::SphericalHarmonics> sh;
-    thread_local int cached_lmax = -1;
-
-    if (l_max != cached_lmax) {
-        sh = std::make_unique<sylm::SphericalHarmonics>(l_max, /*mp_max=*/2);
-        cached_lmax = l_max;
-    }
-
-    double ct = std::cos(theta * 0.5), st = std::sin(theta * 0.5);
-    double cp = std::cos(phi   * 0.5), sp = std::sin(phi   * 0.5);
-    std::array<double, 4> R = { ct*cp, +st*sp, st*cp, ct*sp };
-
-    sh->compute_H(R);
-    sh->fill_Y(+2, Yp);
-    sh->fill_Y(-2, Yp);
+    return std::tgamma(n + 1.0);
 }
 
-Matrix3d fLB(const Vector3d& r_V, vis_params vis_params) {
-    const int l_max = vis_params.ell;
-
-    // ── One WignerH computation for all coefficients ───────────────────────
-    thread_local std::vector<cd> Yp, Ym;
-    compute_Y_both(r_V(1), r_V(2), l_max, Yp, Ym);
-
-    Matrix3cd T  = Matrix3cd::Zero();
-
-    for (int i = 0; i < vis_params.coef_length; i++) {
-        int l_T = (int)vis_params.l[i];
-        if (l_T > l_max) continue;
-
-        int    m_T = (int)vis_params.m[i];
-        double A_T =      vis_params.A_re[i];
-        cd     B_T = 1i * vis_params.B_im[i];
-
-        // Direct index lookup — no SH computation here
-        int idx = l_T*(l_T+1) + m_T;
-        cd Y2  = Yp[idx];
-        cd Yn2 = Ym[idx];
-
-        cd alm = (1i * A_T + B_T) * Yn2 + ( -1i * A_T + B_T) * Y2;
-        cd blm = (A_T - 1i * B_T) * Yn2 + (  A_T + 1i * B_T) * Y2;
-
-        T(1,1) += alm;  T(1,2) += -blm;
-        T(2,1) += -blm; T(2,2) += -alm;
-    }
-
-    return T.real();
+inline double binom(int n, int k)
+{
+    if (k < 0 || k > n) return 0.0;
+    return factorial(n) / (factorial(k) * factorial(n - k));
 }
 
-Matrix3d fLE(const Vector3d& r_V, vis_params vis_params) {
-    const int l_max = vis_params.ell;
+std::complex<double> sYlm(int s, int l, int m, double theta, double phi) {
+    
+    std::complex<double> summation = 0.0;
+    std::complex<double> phase =
+            std::exp(1i * static_cast<double>(m) * phi);
 
-    // ── One WignerH computation for all coefficients ───────────────────────
-    thread_local std::vector<cd> Yp, Ym;
-    compute_Y_both(r_V(1), r_V(2), l_max, Yp, Ym);
+    for (int r = 0; r <= l - s; ++r)
+    {
+        double coeff =
+            binom(l - s, r) *
+            binom(l + s, r + s - m) *
+            std::pow(-1.0, l - r - s);        
 
-    Matrix3cd T = Matrix3cd::Zero();
+        int p = 2*r + s - m;
 
-    for (int i = 0; i < vis_params.coef_length; i++) {
-        int l_T = (int)vis_params.l[i];
-        if (l_T > l_max) continue;
+        double term =
+            pow(1/tan(theta/2), p);
 
-        int    m_T = (int)vis_params.m[i];
-        double A_T =      vis_params.A_re[i];
-        cd     B_T = 1i * vis_params.B_im[i];
+        summation += coeff * phase * term;
 
-        // Direct index lookup — no SH computation here
-        int idx = l_T*(l_T+1) + m_T;
-        cd Y2  = Yp[idx];
-        cd Yn2 = Ym[idx];
-
-        cd alm = (A_T - 1i * B_T) * Yn2 + (A_T + 1i * B_T) * Y2;
-        cd blm = (1i * A_T + B_T) * Yn2 + (-1i * A_T + B_T) * Y2;
-
-        T(1,1) += -alm;  T(1,2) += -blm;
-        T(2,1) += -blm;  T(2,2) +=  alm;
     }
 
-    return T.real();
+    double prefactor =
+        std::pow(-1.0, m) *
+        std::sqrt(
+            factorial(l + m) * factorial(l - m) * (2.0 * l + 1.0) /
+            (factorial(l + s) * factorial(l - s) * 4.0 * M_PI)
+        ) * 
+        pow(sin(theta / 2), 2 * l);
+
+    std::complex<double> Y =
+        prefactor *
+        summation;
+
+    // nan_to_num equivalent
+    if (!std::isfinite(Y.real()) || !std::isfinite(Y.imag()))
+        Y = 0.0;
+
+    return Y;
+}
+
+Matrix3cd E0(const Vector3d& r_V, double lambda, double dTheta) {
+    double phi = r_V(2);
+    double theta = r_V(1);
+    Matrix3cd E0;
+
+    complex exponential = std::exp(-1 * pow(theta,2) / (2 * pow(dTheta,2)));
+
+    complex a = cos(2 * phi) * pow(sin(theta), 2);
+    complex b = cos(theta) * sin(2 * phi);
+
+    E0 << 0,0,0,
+          0,-a,-b,
+          0,-b,a;
+
+    E0 = E0 * exponential;
+
+    return E0;
+}
+
+Matrix3cd B0(const Vector3d& r_V, double lambda, double dTheta) {
+    double phi = r_V(2);
+    double theta = r_V(1);
+    Matrix3cd T;
+
+    complex exponential = std::exp(-1 * pow(theta,2) / (2 * pow(dTheta,2)));
+
+    complex a = .25 * (3 + cos(2 * theta)) * sin(2 * phi);
+    complex b = cos(theta) * cos(2 * phi);
+
+    T << 0,0,0,
+          0,a,b,
+          0,b,-a;
+
+    T = T * exponential;
+
+    return T;
+}
+
+Matrix3d fE(const Vector3d& r_V, vis_params vis_params) { // E0 Calc
+    double M = vis_params.M;
+    double C = vis_params.C2;
+    double omega1 = vis_params.omega1;
+    double omega2 = vis_params.omega2;
+    double t = vis_params.t;
+    //double t = r_V(0);
+    double w = vis_params.w2;
+
+    int l = vis_params.ell;
+    
+    return E0(r_V, M, C).real();
+    //return (EleM(r_V, M, t, l, l, omega1, 0) + C * EleC(r_V, M, t, l, l, omega2, w)).real();
+}
+
+Matrix3d fB(const Vector3d& r_V, vis_params vis_params) { // B0 Calc
+    double M = vis_params.M;
+    double C = vis_params.C2;
+    double omega1 = vis_params.omega1;
+    double omega2 = vis_params.omega2;
+    double t = vis_params.t;
+    //double t = r_V(0);
+    double w = vis_params.w2;
+
+    int l = vis_params.ell;
+    
+    return B0(r_V, M, C).real();
+    //return (EleM(r_V, M, t, l, l, omega1, 0) + C * EleC(r_V, M, t, l, l, omega2, w)).real();
 }
 
 Matrix3d f(const Vector3d& r_V, vis_params vis_params) {
-    return fLE(r_V, vis_params);
+    return fE(r_V, vis_params);
 }
+
 
 double eigen_solve_val(Matrix3d E_temp, int icity) {
     // Compute eigenvalues and eigenvectors
@@ -147,6 +179,7 @@ double eigen_solve_val(Matrix3d E_temp, int icity) {
     
 }
 
+// Function to get the eigenvector corresponding to the largest eigenvalue with the given sign
 Vector3d eigen_solve(Matrix3d E_temp, int icity) {
     // Compute eigenvalues and eigenvectors
     EigenSolver<Matrix3d> solver(E_temp);
@@ -282,7 +315,7 @@ mat mat_return(double R, double theta, double phi, vis_params vis_params) {
     Matrix3d E;
     mat m;
     Vector3d r = {R, theta, phi};
-    E = fLE(r, vis_params);
+    E = fE(r, vis_params);
 
     m.m11 = E(1,1);
     m.m12 = E(1,2);
@@ -323,18 +356,6 @@ mat test_val(double x, double y, double z, vis_params vals, int spherical = 0) {
     m.m22 = m_temp(2,2);
 
     return m;
-}
-
-double super_poynting(double R, double theta, double phi, vis_params vals) {
-    Vector3d r;
-    r = {R, theta, phi};
-
-    Matrix3d m_E = fLE(r, vals);
-    Matrix3d m_B = fLB(r, vals);
-
-    double Sr = (m_B(1,2) * m_E(1,1) - m_B(1,1) * m_E(1,2)) * 2 * R * R * sin(theta);
-    
-    return Sr;
 }
 
 vect singular_find(double r_val, int icity, double ending_tolerance, double delta_0, double safety,

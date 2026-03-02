@@ -1,6 +1,7 @@
 from ctypes import *
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
 
 def make_square(cx, cy, h, nx, ny):
     # --- 1. Construct square boundary (counterclockwise) ---
@@ -103,7 +104,14 @@ class vis_params(Structure):
                 ('t', c_double), 
                 ('C2', c_double),
                 ('w2', c_double),
-                ('ell', c_int)]
+                ('ell', c_int),
+                ('A_re', c_double*4000),
+                ('A_im', c_double*4000),
+                ('B_re', c_double*4000),
+                ('B_im', c_double*4000),
+                ('l', c_double*4000),
+                ('m', c_double*4000),
+                ('coef_length', c_int)]
     
 class vect(Structure):
     _fields_ = [('x', c_double*10000),
@@ -119,6 +127,124 @@ class rk_params(Structure):
                 ('C', c_double),
                 ('w', c_double)]
 
+def to_c_array(row, size=4000):
+    data = row.tolist()
+    if len(data) < size:
+        data += [0.0] * (size - len(data))
+    return (c_double * size)(*data[:size])
+
+
+def make_vis_param(lMax, name):
+    df = pd.read_csv(name, header=None, index_col=0)
+
+    # ------------------ Parameters ------------------
+    A_re = np.array(df.iloc[0].tolist())
+    A_im = np.array(df.iloc[1].tolist())
+    B_re = np.array(df.iloc[2].tolist())
+    B_im = np.array(df.iloc[3].tolist())
+    M = np.array(df.iloc[4].tolist(), dtype='int')
+    L = np.array(df.iloc[5].tolist(), dtype='int')
+
+    coef_length = len(A_re) - 1
+
+
+    A = {}
+    B = {}
+    for i, ml in enumerate(zip(M, L)):
+        m, l = ml
+        ml = (int(m), int(l))
+        A[ml] = A_re[i] + (1.j * A_im[i])
+        B[ml] = B_re[i] + (1.j * B_im[i])
+
+    model_param = vis_params(
+        M=1.,
+        omega1=1,
+        omega2=1,
+        t=0.,
+        C2=.1,
+        w2=np.pi/4,
+        ell=lMax,
+        A_re=to_c_array(A_re),
+        A_im=to_c_array(A_im),
+        B_re=to_c_array(B_re),
+        B_im=to_c_array(B_im),
+        m=to_c_array(M),
+        l=to_c_array(L),
+        coef_length=coef_length
+    )
+
+    return model_param, A, B
+
+def force_calc(lMax, omega, A, B):
+    tot = 0
+    for l in range(2,lMax+1):
+        for mI in range(1,2 * l + 1):
+            m = mI - l
+            if abs(m) == 2:
+                Alm = R(A,l,m)
+                Alp1m = R(A,l+1,m)
+                Blm = R(B,l,m)
+                Blp1m = R(B,l+1,m)
+                I_S_fact = (4 / (32 * np.pi * (l + 1))) * np.sqrt((2 * (l - 1) * (l + 3)) / ((2 * l + 1) * (2 * l + 3))) * np.sqrt(2 * (l - m + 1) * (l + m + 1))
+                C_fact = (-1.j /(8 * np.pi * l * (l+1)) )
+                I = np.conj(Alm) * Alp1m
+                S = np.conj(Blm) * Blp1m
+                C = m * np.conj(Alm) * Blm
+                if np.isnan((64 / omega**2) * (I_S_fact * (I + S) + C_fact * C)):
+                    print((64 / omega**2) * (I_S_fact * (I + S) + C_fact * C))
+                tot += (64 / omega**2) * (I_S_fact * (I + S) + C_fact * C)
+
+
+    return np.real(tot)
+
+def R(T, l, m):
+    try:
+        val = T[(m, l)]
+        if not np.isnan(val):
+            return val
+        else:
+            return 0
+    except:
+        return 0
+
+def full_force_calc(lMax, omega, A, B, r=1):
+
+    Xi_m1 = (1 / np.sqrt(2)) * np.array([1, -1.j, 0])
+    Xi_0 = np.array([0, 0, 1])
+    Xi_p1 = (-1 / np.sqrt(2)) * np.array([1, 1.j, 0])
+
+    tot = np.zeros(3, dtype='complex128')
+    for l in range(2,lMax+1):
+        for mI in range(1, 2 * l + 1):
+            a = 1/(32 * np.pi * (l+1)) * ((2 * (l-1) * (l+3)) / ((2 * l + 1) * (2 * l + 3)))**(.5)
+            m = mI - l
+
+            Alm_bar = np.conj(R(A, l, m))
+            Alp1mm1 = Alm_bar * R(A, l+1, m-1)
+            Alp1m = Alm_bar * R(A, l+1, m)
+            Alp1mp1 = Alm_bar * R(A, l+1, m+1)
+
+            Blm = R(B, l, m)
+            Blm_bar = np.conj(Blm)
+            Blp1mm1 = Blm_bar * R(B, l+1, m-1)
+            Blp1m = Blm_bar * R(B, l+1, m)
+            Blp1mp1 = Blm_bar * R(B, l+1, m+1)
+            Blmm1 = R(B, l, m-1)
+            Blmp1 = R(B, l, m+1)
+
+            T11 = np.sqrt((l-m+1) * (l-m+2)) * (Alp1mm1 + Blp1mm1) * Xi_m1
+            T12 = np.sqrt(2 * (l-m+1) * (l+m+1)) * (Alp1m + Blp1m) * Xi_0
+            T13 = np.sqrt((l+m+1) * (l+m+2)) * (Alp1mp1 + Blp1mp1) * Xi_p1
+            T1 = a * (8 * r / omega)**2 * (T11 + T12 + T13)
+
+            T21 = np.sqrt(.5 * (l+m) * (l-m+1)) * Blmm1 * Xi_m1
+            T22 = m * Blm * Xi_0
+            T23 = -1 * np.sqrt(.5 * (l-m) * (l+m+1)) * Blmp1 * Xi_p1
+            T2 = (-1j / (8 * np.pi * (l + 1))) * (8 * r / omega)**2 * Alm_bar * (T21 + T22 + T23)
+
+            tot += T1 + T2
+            
+    return tot.real
 
 def spherical_to_xyz(r, theta, phi):
     x = r * np.cos(theta) * np.sin(phi)

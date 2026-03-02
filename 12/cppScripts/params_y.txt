@@ -1,0 +1,15 @@
+# parameters (key=value)
+lMax=100
+lMin=2
+threshold=1e-8
+lam=1.0
+N_theta=1000
+N_phi=1000
+# mode can be "pm2" (default) or "all"
+mode=all
+out_prefix=data_gauss_y
+use_phi=true
+precision=9
+dtheta=0.001
+deltaTheta = 1.570796
+deltaPhi = 0

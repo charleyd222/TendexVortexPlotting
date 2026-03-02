@@ -5,16 +5,17 @@ import quaternionic
 import spherical
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
+import csv
 
 # Parameters
-lMax = 100
-threshold = 1e-8
-lam = 1.0
-dtheta = 0.1
+lMax = 10 # Maximum multipole moment
+threshold = 1e-12 # Minimum coeffecient to not be assumed to be 0
+lam = 1.0 # Multiplicative increase to E0
+dtheta = .01 # Size of gaussian in E0
 
 # resolution
-N_theta = 60
-N_phi = 120
+N_theta = 100
+N_phi = 100
 
 # Fixed vectors and projection
 e1 = np.array([1.0, 0.0, 0.0])
@@ -75,6 +76,22 @@ def E0(theta_idx, phi_idx):
     T *= lam * exp_factor_theta[theta_idx]
     return STT(T)
 
+def E0_phi(theta_idx, phi_idx):
+    ct = cos_theta[theta_idx]
+    c2p = cos2phi[phi_idx]
+    s2p = sin2phi[phi_idx]
+    
+
+    T = np.zeros((3,3), dtype=complex)
+    T[0, :] = 0
+    T[:, 0] = 0
+    T[1,1] = c2p * (ct**2)
+    T[1,2] = - s2p * ct
+    T[2,1] = - s2p * ct
+    T[2,2] = c2p
+    T *= lam * exp_factor_theta_phi[theta_idx, phi_idx]
+    return STT(T)
+
 # Create spectral grid
 # Use Legendre for u = cos(theta) in [-1,1].
 # integral over theta with sin(theta) dtheta becomes integral over u = cos(theta)
@@ -93,7 +110,13 @@ cot_theta_half = np.cos(theta_nodes / 2.0) / np.where(sin_theta_half == 0, 1e-30
 
 cos2phi = np.cos(2.0 * phi_nodes) # shape (N_phi,)
 sin2phi = np.sin(2.0 * phi_nodes)
-exp_factor_theta = np.exp(-(theta_nodes**2) / (2.0 * dtheta))  # shape (N_theta,)
+exp_factor_theta = np.exp(-(theta_nodes**2) / (2.0 * (dtheta**2)))  # shape (N_theta,)
+
+theta_term = (theta_nodes[:, None] - np.pi/2)**2      # shape (N_theta, 1)
+phi_term   = (phi_nodes[None, :] - np.pi)**2          # shape (1, N_phi)
+exp_factor_theta_phi = np.exp(-(theta_term + phi_term) / (2.0 * (dtheta**2)))  # shape (N_theta,)
+
+
 
 # Make E0 matrix
 E0_mats = np.empty((N_theta, N_phi, 3, 3), dtype=complex)
@@ -102,7 +125,11 @@ for k in range(N_theta):
     for j in range(N_phi):
         E0_mats[k, j] = E0(k, j)
 
+#evals = np.linalg.eigvals(E0_mats.real)
 
+#plt.imshow(np.max(evals, axis=2))
+#plt.show()
+#1/0
 # Make MM and MbarMBar Matrices
 MM = np.outer(M, M)
 MBarMBar = np.outer(MBar, MBar)
@@ -176,9 +203,11 @@ def all_m_check(ell_max):
     M = np.linspace(-ell_max, ell_max, 2*ell_max+1)
     L = np.linspace(2,ell_max, ell_max-1)
 
+    save_coefs(M, L, A_re_mat, A_im_mat, B_re_mat, B_im_mat)
+
     return M, L, A_re_mat, A_im_mat, B_re_mat, B_im_mat
 
-def pm2_m_check(ell_max):
+def pm2_m_check(ell_min, ell_max):
     A_re_mat = np.full((ell_max, 2 * ell_max+1), fill_value=np.nan)
     B_re_mat = np.full((ell_max, 2 * ell_max+1), fill_value=np.nan)
     A_im_mat = np.full((ell_max, 2 * ell_max+1), fill_value=np.nan)
@@ -186,8 +215,7 @@ def pm2_m_check(ell_max):
 
     wigner = spherical.Wigner(ell_max, 2)
 
-    for ell in range(2, ell_max+1):
-        #print(ell)
+    for ell in range(ell_min, ell_max+1):
         A_re_temp = np.zeros(2 * ell+1)
         B_re_temp = np.zeros(2 * ell+1)
         A_im_temp = np.zeros(2 * ell+1)
@@ -213,30 +241,144 @@ def pm2_m_check(ell_max):
     M = np.linspace(-ell_max, ell_max, 2*ell_max+1)
     L = np.linspace(2,ell_max, ell_max-1)
 
+    save_coefs(M, L, A_re_mat, A_im_mat, B_re_mat, B_im_mat)
+
     return M, L, A_re_mat, A_im_mat, B_re_mat, B_im_mat
+
+def reprocess(A_re, A_im, B_re, B_im, threshold = 1e-8):
+    A_re_list = ["A_re_V"]
+    A_im_list = ["A_im_V"]
+    B_re_list = ["B_re_V"]
+    B_im_list = ["B_im_V"]
+    m_list = ["M"]
+    l_list = ["L"]
+
+    l_length = A_re.shape[0]
+    m_length = A_re.shape[1]
+    for l in range(l_length):
+        for m in range(m_length):
+            got = False
+            A_re_T = 0
+            A_im_T = 0
+            B_re_T = 0
+            B_im_T = 0
+
+            
+            if not np.isnan(A_re[l,m]) and np.abs(A_re[l,m]) > threshold:
+                got = True
+                A_re_T = A_re[l,m]
+
+            if not np.isnan(A_im[l,m]) and np.abs(A_im[l,m]) > threshold:
+                got = True
+                A_im_T = A_im[l,m]
+
+            if not np.isnan(B_re[l,m]) and np.abs(B_re[l,m]) > threshold:
+                got = True
+                B_re_T = B_re[l,m]
+
+            if not np.isnan(B_im[l,m]) and np.abs(B_im[l,m]) > threshold:
+                got = True
+                B_im_T = B_im[l,m]
+
+            if got:
+                #print(l+1, m - l_length, A_re_T, B_im_T)
+                
+                A_re_list += [A_re_T]
+                A_im_list += [A_im_T]
+                B_re_list += [B_re_T]
+                B_im_list += [B_im_T]
+                l_list += [l+1]
+                m_list += [m - l_length]
+
+    return A_re_list, A_im_list, B_re_list, B_im_list, m_list, l_list
+
+def load_csv(gauss_dtheta, ell_max, name=None):
+    import pandas as pd
+    if name== None:
+        df = pd.read_csv(f'data_gauss_{str(gauss_dtheta).replace(".", "p")}_lMax_{ell_max}.csv', header=None, index_col=0)
+    else:
+        df = pd.read_csv(name, header=None, index_col=0)
+    A_re = np.array(df.iloc[0].tolist())
+    A_im = np.array(df.iloc[1].tolist())
+    B_re = np.array(df.iloc[2].tolist())
+    B_im = np.array(df.iloc[3].tolist())
+    M = np.array(df.iloc[4].tolist(), dtype='int')
+    L = np.array(df.iloc[5].tolist(), dtype='int')
+
+    A_re_mat = np.full((ell_max, 2 * ell_max+1), fill_value=np.nan)
+    B_re_mat = np.full((ell_max, 2 * ell_max+1), fill_value=np.nan)
+    A_im_mat = np.full((ell_max, 2 * ell_max+1), fill_value=np.nan)
+    B_im_mat = np.full((ell_max, 2 * ell_max+1), fill_value=np.nan)
+
+    for ell in range(2, ell_max+1):
+        ell_indices = np.where(L == ell)[0]
+        A_re_mat[ell-1, ell_max - ell : ell_max - ell + (2 * ell + 1)] = 0
+        A_im_mat[ell-1, ell_max - ell : ell_max - ell + (2 * ell + 1)] = 0
+        B_re_mat[ell-1, ell_max - ell : ell_max - ell + (2 * ell + 1)] = 0
+        B_im_mat[ell-1, ell_max - ell : ell_max - ell + (2 * ell + 1)] = 0
+
+        for mI in range(0, 2*ell+1):
+            m = mI-ell
+
+            m_indices = np.where(M == m)[0]
+            index = np.intersect1d(ell_indices, m_indices)
+
+            try:
+                index = index[0]
+
+                A_re_mat[ell-1, ell_max + m] = A_re[index]
+                A_im_mat[ell-1, ell_max + m] = A_im[index]
+                B_re_mat[ell-1, ell_max + m] = B_re[index]
+                B_im_mat[ell-1, ell_max + m] = B_im[index]
+            except:
+                pass
+    M = np.linspace(-ell_max, ell_max, 2*ell_max+1)
+    L = np.linspace(2,ell_max, ell_max-1)
+    return M, L, A_re_mat, A_im_mat, B_re_mat, B_im_mat
+
+def save_coefs(M, L, A_re_mat, A_im_mat, B_re_mat, B_im_mat):
+    A_re_list, A_im_list, B_re_list, B_im_list, m_list, l_list = reprocess(A_re_mat, A_im_mat, B_re_mat, B_im_mat)
+
+    title = 'data_gauss_' + str(dtheta).replace(".","p") + '_lMax_' + str(lMax) +  ".csv"
+    with open(title, 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile, delimiter=',')
+
+        writer.writerow(A_re_list)
+        writer.writerow(A_im_list)
+        writer.writerow(B_re_list)
+        writer.writerow(B_im_list)
+        writer.writerow(m_list)
+        writer.writerow(l_list)
 
 fig, ax = plt.subplots(2,2)
 
-#M, L, A_re_mat, A_im_mat, B_re_mat, B_im_mat = all_m_check(5)
-M, L, A_re_mat, A_im_mat, B_re_mat, B_im_mat = pm2_m_check(5)
+#M, L, A_re_mat, A_im_mat, B_re_mat, B_im_mat = all_m_check(30)
+#M, L, A_re_mat, A_im_mat, B_re_mat, B_im_mat = pm2_m_check(2, lMax)
+M, L, A_re_mat, A_im_mat, B_re_mat, B_im_mat = load_csv(0.001, 100, name='data_gauss_y_0p001_lMax_100.csv')
 
-norm = colors.Normalize(-.5,.5)
+print(A_re_mat)
+
+m = np.nanmax([A_re_mat, np.real(A_im_mat), B_re_mat, np.real(B_im_mat)])
+norm = colors.Normalize(-m,m)
 
 ax[0,0].set_title('A coef Real part')
 ax[0,0].pcolormesh(M, L, A_re_mat[1:], shading='nearest', norm=norm, cmap='jet')
 ax[0,0].set_xlabel('m')
-ax[0,0].set_ylabel('l')
+ax[0,0].set_ylabel(r'$\ell$')
 ax[0,1].set_title('A coef Imag part')
 ax[0,1].pcolormesh(M, L, A_im_mat[1:], shading='nearest', norm=norm, cmap='jet')
 ax[0,1].set_xlabel('m')
-ax[0,1].set_ylabel('l')
+ax[0,1].set_ylabel(r'$\ell$')
 ax[1,0].set_title('B coef Real part')
 ax[1,0].pcolormesh(M, L, B_re_mat[1:], shading='nearest', norm=norm, cmap='jet')
 ax[1,0].set_xlabel('m')
-ax[1,0].set_ylabel('l')
+ax[1,0].set_ylabel(r'$\ell$')
 ax[1,1].set_title('B coef Imag part')
 m = ax[1,1].pcolormesh(M, L, B_im_mat[1:], shading='nearest', norm=norm, cmap='jet')
 ax[1,1].set_xlabel('m')
-ax[1,1].set_ylabel('l')
+ax[1,1].set_ylabel(r'$\ell$')
+
+fig.suptitle(r'Coeffecients for $E_0$ with $d\theta = %s$' % (dtheta))
+
 plt.colorbar(m, ax = ax[:,1])
 plt.show()
