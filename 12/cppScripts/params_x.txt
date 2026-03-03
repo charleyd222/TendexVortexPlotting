@@ -10,6 +10,6 @@ mode=all
 out_prefix=data_gauss_x
 use_phi=true
 precision=9
-dtheta=0.001
+dtheta=.0001
 deltaTheta = 1.570796
 deltaPhi = 3.141592

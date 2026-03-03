@@ -66,7 +66,7 @@ static void compute_Y_both(double theta, double phi, int l_max,
 
     sh->compute_H(R);
     sh->fill_Y(+2, Yp);
-    sh->fill_Y(-2, Yp);
+    sh->fill_Y(-2, Ym);
 }
 
 Matrix3d fLB(const Vector3d& r_V, vis_params vis_params) {
@@ -104,7 +104,7 @@ Matrix3d fLB(const Vector3d& r_V, vis_params vis_params) {
 Matrix3d fLE(const Vector3d& r_V, vis_params vis_params) {
     const int l_max = vis_params.ell;
 
-    // ── One WignerH computation for all coefficients ───────────────────────
+    // One WignerH computation for all coefficients
     thread_local std::vector<cd> Yp, Ym;
     compute_Y_both(r_V(1), r_V(2), l_max, Yp, Ym);
 
@@ -114,9 +114,9 @@ Matrix3d fLE(const Vector3d& r_V, vis_params vis_params) {
         int l_T = (int)vis_params.l[i];
         if (l_T > l_max) continue;
 
-        int    m_T = (int)vis_params.m[i];
-        double A_T =      vis_params.A_re[i];
-        cd     B_T = 1i * vis_params.B_im[i];
+        int m_T = (int)vis_params.m[i];
+        cd A_T = vis_params.A_re[i] + 1i * vis_params.A_im[i];
+        cd B_T = vis_params.B_re[i] + 1i * vis_params.B_im[i];
 
         // Direct index lookup — no SH computation here
         int idx = l_T*(l_T+1) + m_T;

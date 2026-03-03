@@ -332,10 +332,8 @@ public:
     int output_size()             const noexcept { return Ysize(ell_max); }
     int Yindex(int ell, int m)    const noexcept { return sylm::Yindex(ell, m); }
 
-    // ------------------------------------------------------------------
     //  Phase 1: run WignerH recurrence and cache za-powers and zg.
     //  Call once per quaternion / grid point.
-    // ------------------------------------------------------------------
     void compute_H(const std::array<double,4>& R) {
         auto ep = euler_phases(R);
         _last_zg = ep.zg;
@@ -343,12 +341,10 @@ public:
         complex_powers(ep.za, ell_max, _za_pow);
     }
 
-    // ------------------------------------------------------------------
     //  Phase 2: fill output array for a specific spin using cached H.
     //  Can be called multiple times with different spins after one
     //  compute_H().
     //  |spin| must be <= mp_max supplied to the constructor.
-    // ------------------------------------------------------------------
     void fill_Y(int spin, std::vector<cd>& out) const {
         out.assign(Ysize(ell_max), cd(0.0, 0.0));
         // Build zg^|spin|
@@ -357,10 +353,7 @@ public:
         _fill_spin(spin, zg_abs_s, out);
     }
 
-    // ------------------------------------------------------------------
-    //  Legacy all-in-one (backward compatible).
     //  spin defaults to mp_max (the value originally passed to constructor).
-    // ------------------------------------------------------------------
     void compute(const std::array<double,4>& R, std::vector<cd>& out) {
         compute_H(R);
         fill_Y(_spin_default, out);
@@ -399,9 +392,6 @@ private:
     }
 };
 
-// -----------------------------------------------------------------------
-//  Free helper: Ylm from (theta, phi), legacy / test use
-// -----------------------------------------------------------------------
 inline std::vector<cd> Ylm(int ell_max, int s, double theta, double phi) {
     double ct=std::cos(theta/2), st=std::sin(theta/2);
     double cp=std::cos(phi/2),   sp=std::sin(phi/2);

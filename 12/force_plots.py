@@ -85,7 +85,7 @@ def alternate_omega_full(ax1, ax2, ax3, A, B):
         ax3.set_xlabel(r'$\ell$ Max')
 
 def alternate_omega_full_x(ax, A, B, ratio = False):
-    for omega in [1]:
+    for omega in [1,1.1,1.2,1.3,1.4]:
         f_omega_y = []
         f_omega_x = []
         if ratio:
@@ -98,23 +98,28 @@ def alternate_omega_full_x(ax, A, B, ratio = False):
             f_omega_y += [val[0] / base]
             f_omega_x += [l]
 
-        #popt, pcov = sp.curve_fit(f, f_omega_x, f_omega_y)
-        #x = np.linspace(2,lMax,100)
+        if False:#not ratio:
+            popt, pcov = sp.curve_fit(f, f_omega_x, f_omega_y)
+            x = np.linspace(2,lMax,100)
 
-        #ax.plot(x, f(x, popt[0], popt[1], popt[2]))
-        #ax.scatter(f_omega_x, f_omega_y, label=omega)
+            ax.plot(x, f(x, popt[0], popt[1], popt[2]))
+            ax.scatter(f_omega_x, f_omega_y, label=omega)
 
-        ax.plot(f_omega_y, label='x')
+            ax.plot(f_omega_y, label=omega)
 
-        ax.set_title(r'Varying $\Omega$, X component')
+            print(popt)
+
+        
         if ratio:
+            ax.set_title(r'Varying $\Omega$, X component')
             ax.set_ylabel(r'Force increase over $\ell = 2$')
         else:
+            ax.set_title(r'Force increase over $\ell = 2$')#. Fit Coef: $A x^{B} + C$. A:' + popt[0] + f'. B:{popt[1]}. C:{popt[2]}')
             ax.set_ylabel(r'$F_x$')
         ax.set_xlabel(r'$\ell$ Max')
 
 def alternate_omega_full_y(ax, A, B, ratio = False):
-    for omega in [1]:
+    for omega in [1,1.1,1.2,1.3,1.4]:
         f_omega_y = []
         f_omega_x = []
         if ratio:
@@ -156,15 +161,17 @@ def alternate_omega_full_z(ax, A, B, ratio = False):
             f_omega_y += [val[2] / base]
             f_omega_x += [l]
 
-        #popt, pcov = sp.curve_fit(f, f_omega_x, f_omega_y)
-        #x = np.linspace(2,lMax,100)
+        popt, pcov = sp.curve_fit(f, f_omega_x, f_omega_y)
+        x = np.linspace(2,lMax,100)
 
-        #ax.plot(x, f(x, popt[0], popt[1], popt[2]))
-        #ax.scatter(f_omega_x, f_omega_y, label=omega)
+        ax.plot(x, f(x, popt[0], popt[1], popt[2]))
+        ax.scatter(f_omega_x, f_omega_y, label=omega)
 
         ax.plot(f_omega_y, label=omega)
 
-        ax.set_title(r'Varying $\Omega$, Z component')
+        print(popt)
+
+        ax.set_title(r'Varying $\Omega$, Z component. Fit Coef: $A x^{B} + C$. A:' + popt[0] + f'. B:{popt[1]}. C:{popt[2]}')
         if ratio:
             ax.set_ylabel(r'Force increase over $\ell = 2$')
         else:
@@ -191,20 +198,20 @@ lMaxs = []
 forces = []
 lMax = 100
 
-A_x, B_x = load('data_gauss_x_0p001_lMax_100.csv')
-A_y, B_y = load('data_gauss_y_0p001_lMax_100.csv')
-A_z, B_z = load('data_gauss_z_0p001_lMax_100.csv')
+A_x, B_x = load('data_gauss_x_0p01_lMax_100.csv')
+#A_y, B_y = load('data_gauss_y_0p001_lMax_100.csv')
+#A_z, B_z = load('data_gauss_z_0p001_lMax_100.csv')
 
-fig, ax = plt.subplots(nrows=2, ncols=3)
+fig, ax = plt.subplots(nrows=1, ncols=2)
 
 
-alternate_omega_full_x(ax[0,0], A_x, A_x)
-alternate_omega_full_y(ax[0,1], A_y, A_y)
-alternate_omega_full_z(ax[0,2], A_z, B_z)
-alternate_omega_full_x(ax[1,0], A_x, A_x, True)
-alternate_omega_full_y(ax[1,1], A_y, A_y, True)
-alternate_omega_full_z(ax[1,2], A_z, B_z, True)
+alternate_omega_full_x(ax[0], A_x, A_x)
+#alternate_omega_full_y(ax[0,1], A_y, A_y)
+#alternate_omega_full_z(ax[0,2], A_z, B_z)
+alternate_omega_full_x(ax[1], A_x, A_x, True)
+#alternate_omega_full_y(ax[1,1], A_y, A_y, True)
+#alternate_omega_full_z(ax[1,2], A_z, B_z, True)
 
-fig.suptitle(r'$F_z$ as it varys by max $\ell$ and $\Omega$ | $\ell_{\text{max}} = %s$ | $d\theta$ = 0.001' % (lMax))
+fig.suptitle(r'$F_z$ as it varys by max $\ell$ and $\Omega$ | $\ell_{\text{max}} = %s$ | $d\theta$ = 0.1' % (lMax))
 plt.show()
 

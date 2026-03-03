@@ -105,12 +105,12 @@ class vis_params(Structure):
                 ('C2', c_double),
                 ('w2', c_double),
                 ('ell', c_int),
-                ('A_re', c_double*4000),
-                ('A_im', c_double*4000),
-                ('B_re', c_double*4000),
-                ('B_im', c_double*4000),
-                ('l', c_double*4000),
-                ('m', c_double*4000),
+                ('A_re', c_double*10142),
+                ('A_im', c_double*10142),
+                ('B_re', c_double*10142),
+                ('B_im', c_double*10142),
+                ('l', c_double*10142),
+                ('m', c_double*10142),
                 ('coef_length', c_int)]
     
 class vect(Structure):
@@ -127,7 +127,7 @@ class rk_params(Structure):
                 ('C', c_double),
                 ('w', c_double)]
 
-def to_c_array(row, size=4000):
+def to_c_array(row, size=10142):
     data = row.tolist()
     if len(data) < size:
         data += [0.0] * (size - len(data))
@@ -155,6 +155,10 @@ def make_vis_param(lMax, name):
         ml = (int(m), int(l))
         A[ml] = A_re[i] + (1.j * A_im[i])
         B[ml] = B_re[i] + (1.j * B_im[i])
+
+    print(f"Size: {len(A_im)}. Max: 10142.")
+
+    print(A_im, B_re)
 
     model_param = vis_params(
         M=1.,

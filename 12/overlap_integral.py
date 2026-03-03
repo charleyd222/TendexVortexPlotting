@@ -354,9 +354,7 @@ fig, ax = plt.subplots(2,2)
 
 #M, L, A_re_mat, A_im_mat, B_re_mat, B_im_mat = all_m_check(30)
 #M, L, A_re_mat, A_im_mat, B_re_mat, B_im_mat = pm2_m_check(2, lMax)
-M, L, A_re_mat, A_im_mat, B_re_mat, B_im_mat = load_csv(0.001, 100, name='data_gauss_y_0p001_lMax_100.csv')
-
-print(A_re_mat)
+M, L, A_re_mat, A_im_mat, B_re_mat, B_im_mat = load_csv(0.001, 100, name='data_gauss_x_0p001_lMax_100.csv')
 
 m = np.nanmax([A_re_mat, np.real(A_im_mat), B_re_mat, np.real(B_im_mat)])
 norm = colors.Normalize(-m,m)

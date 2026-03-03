@@ -21,12 +21,12 @@ val_return.restype = c_double
 super_poynting.restype = c_double
 
 # Make data
-gauss_dtheta = 0.001
+gauss_dtheta = 0.1
 lMax = 100
-model_param, A, B = make_vis_param(lMax, 'data_gauss_z_0p001_lMax_100.csv')
+model_param, A, B = make_vis_param(lMax, 'data_gauss_x_0p1_lMax_100.csv')
 
 icity = 1
-l = 500
+l = 2000
 
 # Resolution of the sphere grid
 n_theta = 2*l
