@@ -21,12 +21,13 @@ val_return.restype = c_double
 super_poynting.restype = c_double
 
 # Make data
-gauss_dtheta = 0.1
-lMax = 100
-model_param, A, B = make_vis_param(lMax, 'data_gauss_x_0p1_lMax_100.csv')
+gauss_dtheta = 0.001
+lMax = 50
+#model_param, A, B = make_vis_param(lMax, f'maximized_coefs_lMax_{lMax}_python.csv')
+model_param, A, B = make_vis_param(lMax, f'data_gauss_z_0p001_lMax_{lMax}.csv', norm=True)
 
 icity = 1
-l = 2000
+l = 500
 
 # Resolution of the sphere grid
 n_theta = 2*l
@@ -54,6 +55,7 @@ for i in range(Theta.shape[0]):
         th = Theta[i, j]
         ph = Phi[i, j]
         colors[i, j] = val_return(R, th, ph, icity, model_param, 1)
+        #print(colors[i,j])
         #colors[i, j] = super_poynting(R, th, ph, model_param)
 
 
@@ -90,7 +92,6 @@ m = ax.imshow(
     cmap='viridis'
     #vmin=0, vmax=1
 )
-
 
 print(dt.now() - start)
 plt.colorbar(m)

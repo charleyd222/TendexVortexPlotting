@@ -14,7 +14,6 @@ using namespace Eigen;
 using cd = complex<double>;
 const double PI = 3.1415926535897932384626433832795028841971;
 
-
 struct vis_params {
     double M;
     double omega1;
@@ -23,12 +22,12 @@ struct vis_params {
     double C2;
     double w2;
     int ell;
-    double A_re[4000];
-    double A_im[4000];
-    double B_re[4000];
-    double B_im[4000];
-    double l[4000];
-    double m[4000];
+    double A_re[10146];
+    double A_im[10146];
+    double B_re[10146];
+    double B_im[10146];
+    double l[10146];
+    double m[10146];
     int coef_length;
 };
 

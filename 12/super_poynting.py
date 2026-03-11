@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from ctypes import *
 from datetime import datetime as dt
-from util import vect, vis_params, spherical_fibonacci_points
+from util import vect, vis_params, make_vis_param
 from scipy.integrate import simpson
 
 #Runtime
@@ -13,15 +13,8 @@ super_poynting = CDLL("./cppScripts/rka_iter").super_poynting
 super_poynting.argtypes = [c_double, c_double, c_double, vis_params]
 super_poynting.restype = c_double
 
-model_param = vis_params(
-    M=1.,
-    omega1=1,
-    omega2=1,
-    t=0.,
-    C2=.1,
-    w2=np.pi/4,
-    ell=30
-)
+model_param, A, B = make_vis_param(5, 'nlp_dpzdt_results_amplitudes.csv')
+
 R = 1
 
 n_phi = 200

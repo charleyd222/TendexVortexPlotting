@@ -105,12 +105,12 @@ class vis_params(Structure):
                 ('C2', c_double),
                 ('w2', c_double),
                 ('ell', c_int),
-                ('A_re', c_double*10142),
-                ('A_im', c_double*10142),
-                ('B_re', c_double*10142),
-                ('B_im', c_double*10142),
-                ('l', c_double*10142),
-                ('m', c_double*10142),
+                ('A_re', c_double*10146),
+                ('A_im', c_double*10146),
+                ('B_re', c_double*10146),
+                ('B_im', c_double*10146),
+                ('l', c_double*10146),
+                ('m', c_double*10146),
                 ('coef_length', c_int)]
     
 class vect(Structure):
@@ -127,14 +127,13 @@ class rk_params(Structure):
                 ('C', c_double),
                 ('w', c_double)]
 
-def to_c_array(row, size=10142):
+def to_c_array(row, size=10146):
     data = row.tolist()
     if len(data) < size:
         data += [0.0] * (size - len(data))
     return (c_double * size)(*data[:size])
 
-
-def make_vis_param(lMax, name):
+def make_vis_param(lMax, name, norm = False):
     df = pd.read_csv(name, header=None, index_col=0)
 
     # ------------------ Parameters ------------------
@@ -145,7 +144,16 @@ def make_vis_param(lMax, name):
     M = np.array(df.iloc[4].tolist(), dtype='int')
     L = np.array(df.iloc[5].tolist(), dtype='int')
 
-    coef_length = len(A_re) - 1
+    coef_length = len(A_re)
+
+    s2 = np.sqrt(np.sum(np.abs(A_re + 1.j*A_im)**2 + np.abs(B_re + 1.j* B_im)**2))
+
+    s = s2
+    if norm:
+        A_re /= s
+        A_im /= s
+        B_re /= s
+        B_im /= s
 
 
     A = {}
@@ -156,9 +164,7 @@ def make_vis_param(lMax, name):
         A[ml] = A_re[i] + (1.j * A_im[i])
         B[ml] = B_re[i] + (1.j * B_im[i])
 
-    print(f"Size: {len(A_im)}. Max: 10142.")
-
-    print(A_im, B_re)
+    print(f"Size: {len(A_im)}. Max: 10146.")
 
     model_param = vis_params(
         M=1.,
@@ -211,6 +217,37 @@ def R(T, l, m):
     except:
         return 0
 
+def load_coefs(name, offset=1, norm = False):
+    df = pd.read_csv(name, header=None, index_col=0)
+
+    A_re = np.array(df.iloc[0].tolist(), dtype='complex128')
+    A_im = np.array(df.iloc[1].tolist(), dtype='complex128')
+    B_re = np.array(df.iloc[2].tolist(), dtype='complex128')
+    B_im = np.array(df.iloc[3].tolist(), dtype='complex128')
+    M = np.array(df.iloc[4].tolist(), dtype='int')
+    L = np.array(df.iloc[5].tolist(), dtype='int')
+
+    s1 = np.sum(np.sqrt(A_re**2 + A_im**2) + np.sqrt(B_re**2 + B_im**2))
+    s2 = np.sqrt(np.sum(np.abs(A_re + 1.j*A_im)**2 + np.abs(B_re + 1.j* B_im)**2))
+
+    s = s2
+    if norm:
+        A_re /= s
+        A_im /= s
+        B_re /= s
+        B_im /= s
+
+    A = {}
+    B = {}
+
+    for i, ml in enumerate(zip(M, L)):
+        m, l = ml
+        ml = (int(m), int(l))
+        A[ml] = (A_re[i] + (1.j * A_im[i])) * offset
+        B[ml] = (B_re[i] + (1.j * B_im[i])) * offset
+
+    return A, B
+
 def full_force_calc(lMax, omega, A, B, r=1):
 
     Xi_m1 = (1 / np.sqrt(2)) * np.array([1, -1.j, 0])
@@ -219,7 +256,7 @@ def full_force_calc(lMax, omega, A, B, r=1):
 
     tot = np.zeros(3, dtype='complex128')
     for l in range(2,lMax+1):
-        for mI in range(1, 2 * l + 1):
+        for mI in range(0, 2 * l + 1):
             a = 1/(32 * np.pi * (l+1)) * ((2 * (l-1) * (l+3)) / ((2 * l + 1) * (2 * l + 3)))**(.5)
             m = mI - l
 
@@ -239,12 +276,12 @@ def full_force_calc(lMax, omega, A, B, r=1):
             T11 = np.sqrt((l-m+1) * (l-m+2)) * (Alp1mm1 + Blp1mm1) * Xi_m1
             T12 = np.sqrt(2 * (l-m+1) * (l+m+1)) * (Alp1m + Blp1m) * Xi_0
             T13 = np.sqrt((l+m+1) * (l+m+2)) * (Alp1mp1 + Blp1mp1) * Xi_p1
-            T1 = a * (8 * r / omega)**2 * (T11 + T12 + T13)
+            T1 = a * (2**1.5 * r / omega)**2 * (T11 + T12 + T13)
 
             T21 = np.sqrt(.5 * (l+m) * (l-m+1)) * Blmm1 * Xi_m1
             T22 = m * Blm * Xi_0
             T23 = -1 * np.sqrt(.5 * (l-m) * (l+m+1)) * Blmp1 * Xi_p1
-            T2 = (-1j / (8 * np.pi * (l + 1))) * (8 * r / omega)**2 * Alm_bar * (T21 + T22 + T23)
+            T2 = (-1j / (2**1.5 * np.pi * l * (l + 1))) * (2**1.5 * r / omega)**2 * Alm_bar * (T21 + T22 + T23)
 
             tot += T1 + T2
             

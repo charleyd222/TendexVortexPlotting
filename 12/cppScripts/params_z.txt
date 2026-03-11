@@ -1,5 +1,5 @@
 # parameters (key=value)
-lMax=100
+lMax=50
 lMin=2
 threshold=1e-8
 lam=1.0
