@@ -213,7 +213,7 @@ Result solve_max_force(int l_max,
     double actual_power   = (r * r) / (4.0 * PI * Omega * Omega) * actual_norm_sq;
 
     // ---- Verbose output ----
-    if (verbose) {
+    //if (verbose) {
         std::cout << "\n";
         std::cout << "Constraint     : "
                   << (ct == ConstraintType::Norm ? "||c||² = l_max" : "dE/dt = P")
@@ -231,7 +231,7 @@ Result solve_max_force(int l_max,
                   << std::setw(16) << "Im(c)"
                   << std::setw(14) << "|c|" << "\n"
                   << std::string(64, '-') << "\n";
-
+    if (verbose) {
         for (auto& [key, idx] : idx_map) {
             cdouble val = c_opt[idx];
             if (std::abs(val) < 1e-8) continue;
@@ -249,14 +249,16 @@ Result solve_max_force(int l_max,
 // ============================================================================
 // save_coefs  –  writes CSV with header row indicating the constraint used
 // ============================================================================
-void save_coefs(const Result& res, int l_max, ConstraintType ct, double P_target) {
-    const std::string folder = "csvs";
+void save_coefs(const Result& res, int l_max, ConstraintType ct, double P_target, std::string folder) {
+    //const std::string folder = "csvs";
     mkdir(folder.c_str(), 0755);   // no-op if already exists
+
+    int P = (int)P_target;
 
     std::string suffix = (ct == ConstraintType::Norm)
                        ? "norm"
                        : "power";
-    std::string fname = folder + "/maximized_coefs_lMax_" + std::to_string(l_max)
+    std::string fname = folder + "/maximized_coefs_lMax_" + std::to_string(l_max) + "_Power_" + std::to_string(P)
                       + "_" + suffix + ".csv";
     std::ofstream f(fname);
     if (!f) throw std::runtime_error("Cannot open " + fname);
@@ -302,12 +304,13 @@ int main(int argc, char* argv[]) {
     // --- Parse positional args ---
     int l_max = (argc > 1) ? std::stoi(argv[1]) : 10;
     int c = (argc > 2) ? std::stod(argv[2]) : 1.0; // 0 for P 1 for lmax
-    double r     = (argc > 3) ? std::stod(argv[2]) : 1.0;
-    double Omega = (argc > 4) ? std::stod(argv[3]) : 1.0;
+    double P_target = (argc > 3) ? std::stod(argv[3]) : 1.0;
+    double r     = (argc > 4) ? std::stod(argv[4]) : 1.0;
+    double Omega = (argc > 5) ? std::stod(argv[5]) : 1.0;
+    std::string folder = (argc > 6) ? argv[6] : "csvs";
 
     // --- Parse optional flags ---
     ConstraintType ct = ConstraintType::Norm;
-    double P_target = 1.0;
 
     if (c == 1) ct = ConstraintType::Norm;
     else if (c == 0) ct = ConstraintType::Power;
@@ -315,7 +318,7 @@ int main(int argc, char* argv[]) {
     std::cout << "=== Multipole Force Maximization ===\n"
               << "l_max=" << l_max << "  r=" << r << "  Omega=" << Omega << "\n";
 
-    Result res = solve_max_force(l_max, r, Omega, ct, P_target, /*verbose=*/true);
-    save_coefs(res, l_max, ct, P_target);
+    Result res = solve_max_force(l_max, r, Omega, ct, P_target, /*verbose=*/false);
+    save_coefs(res, l_max, ct, P_target, folder);
     return 0;
 }

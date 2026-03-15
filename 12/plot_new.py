@@ -22,9 +22,9 @@ super_poynting.restype = c_double
 
 # Make data
 gauss_dtheta = 0.001
-lMax = 50
+lMax = 200
 #model_param, A, B = make_vis_param(lMax, f'maximized_coefs_lMax_{lMax}_python.csv')
-model_param, A, B = make_vis_param(lMax, f'data_gauss_z_0p001_lMax_{lMax}.csv', norm=True)
+model_param, A, B = make_vis_param(lMax, f'csvs/power_1_omega_1/maximized_coefs_lMax_{lMax}_Power_1_power.csv')
 
 icity = 1
 l = 500
@@ -65,7 +65,7 @@ ax = fig.add_subplot()
 # Label axes
 ax.set_xlabel(r'$\phi$')
 ax.set_ylabel(r'$\theta$')
-ax.set_title(f'I between 2 and {lMax} linear combination, dTheta = {gauss_dtheta}. Reconstruccted E Eigenvalues')
+ax.set_title(f'I between 2 and {lMax} linear combination. Maximization Coefficients')
 #ax.set_xlim(0, 2 * np.pi)
 #ax.set_ylim(0, np.pi)
 if False:

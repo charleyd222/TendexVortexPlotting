@@ -133,28 +133,18 @@ def to_c_array(row, size=10146):
         data += [0.0] * (size - len(data))
     return (c_double * size)(*data[:size])
 
-def make_vis_param(lMax, name, norm = False):
+def make_vis_param(lMax, name):
     df = pd.read_csv(name, header=None, index_col=0)
 
     # ------------------ Parameters ------------------
-    A_re = np.array(df.iloc[0].tolist())
-    A_im = np.array(df.iloc[1].tolist())
-    B_re = np.array(df.iloc[2].tolist())
-    B_im = np.array(df.iloc[3].tolist())
+    A_re = np.array(df.iloc[0].tolist(), dtype='float64')
+    A_im = np.array(df.iloc[1].tolist(), dtype='float64')
+    B_re = np.array(df.iloc[2].tolist(), dtype='float64')
+    B_im = np.array(df.iloc[3].tolist(), dtype='float64')
     M = np.array(df.iloc[4].tolist(), dtype='int')
     L = np.array(df.iloc[5].tolist(), dtype='int')
 
     coef_length = len(A_re)
-
-    s2 = np.sqrt(np.sum(np.abs(A_re + 1.j*A_im)**2 + np.abs(B_re + 1.j* B_im)**2))
-
-    s = s2
-    if norm:
-        A_re /= s
-        A_im /= s
-        B_re /= s
-        B_im /= s
-
 
     A = {}
     B = {}
@@ -185,24 +175,28 @@ def make_vis_param(lMax, name, norm = False):
 
     return model_param, A, B
 
-def force_calc(lMax, omega, A, B):
+def force_calc(lMax, lMin, A, B, Omega= 1, r=1):
     tot = 0
-    for l in range(2,lMax+1):
-        for mI in range(1,2 * l + 1):
-            m = mI - l
-            if abs(m) == 2:
-                Alm = R(A,l,m)
-                Alp1m = R(A,l+1,m)
-                Blm = R(B,l,m)
-                Blp1m = R(B,l+1,m)
-                I_S_fact = (4 / (32 * np.pi * (l + 1))) * np.sqrt((2 * (l - 1) * (l + 3)) / ((2 * l + 1) * (2 * l + 3))) * np.sqrt(2 * (l - m + 1) * (l + m + 1))
-                C_fact = (-1.j /(8 * np.pi * l * (l+1)) )
-                I = np.conj(Alm) * Alp1m
-                S = np.conj(Blm) * Blp1m
-                C = m * np.conj(Alm) * Blm
-                if np.isnan((64 / omega**2) * (I_S_fact * (I + S) + C_fact * C)):
-                    print((64 / omega**2) * (I_S_fact * (I + S) + C_fact * C))
-                tot += (64 / omega**2) * (I_S_fact * (I + S) + C_fact * C)
+    for l in range(lMin,lMax+1):
+        m = -2
+        #for mI in range(0,2 * l+1):
+        #    m = mI - lMax
+
+        Alm = R(A,l,m)
+        Alp1m = R(A,l+1,m)
+        Blm = R(B,l,m)
+        Blp1m = R(B,l+1,m)
+
+        prefactor = 8.0 * r * r / (Omega * Omega)
+        a_coef = 1.0 / (32.0 * np.pi * (l + 1)) * np.sqrt((2.0 * (l - 1) * (l + 3)) / ((2.0 * l + 1) * (2.0 * l + 3)))
+        alpha  = a_coef * np.sqrt(2.0 * (l - m + 1) * (l + m + 1)) * prefactor
+
+        C_fact = (-1.j * m /(8 * np.pi * l * (l+1)) ) * prefactor
+        I = np.conj(Alm) * Alp1m
+        S = np.conj(Blm) * Blp1m
+        C = np.conj(Alm) * Blm
+
+        tot += (alpha * (I + S) + C_fact * C)
 
 
     return np.real(tot)

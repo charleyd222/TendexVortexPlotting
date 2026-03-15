@@ -7,13 +7,16 @@ import scipy.optimize as sp
 def f(x,a,b,c):
     return a * x**b + c
 
+def f2(x,a,c):
+    return a* (1 - 1/(x**c))
+
 def alternate_omega(ax, A, B):
     for omega in [1]:
         f_omega_y = []
         f_omega_x = []
         base = force_calc(2, omega, A, B)
         for l in range(2,lMax):
-            f_omega_y += [force_calc(l, omega, A, B)]# / base]
+            f_omega_y += [force_calc(l, A, B, omega)]# / base]
             f_omega_x += [l]
 
         popt, pcov = sp.curve_fit(f, f_omega_x, f_omega_y)
@@ -165,8 +168,7 @@ def alternate_omega_full_z(ax, A, B, ratio = False):
             ax.set_ylabel(r'$F_z$')
             ax.set_title(r'Varying $\Omega$, Z component')
             ax.legend()
-        ax.set_xlabel(r'$\ell$ Max')
-        
+        ax.set_xlabel(r'$\ell$ Max')     
 
 def alternate_l(ax, A, B, omega=1):
     for l in [3, 6, 9, 12, 15, 18]:
@@ -183,36 +185,115 @@ def alternate_l(ax, A, B, omega=1):
         ax.set_xticks(np.linspace(0,100,9), np.linspace(0,2,9))
         ax.legend()
 
-def lmax_plot(ax, )
+def make_csvs():
+    import subprocess
+    power = 1
+    R = 1
+    for omega in [.7,.8,.9,1,1.1,1.2,1.3]:
+        folder = f"csvs/power_{power}_omega_{omega}"
+        for l in [201]:#np.arange(101,200,1):
+            subprocess.run(["/Users/cdavis/Desktop/Work/Research/TendexVortexPlotting/12/cppScripts/nlp", str(l), str(0), str(power), str(R), str(omega), folder])
+
+def lmax_plot(ax, omega, constraint = 'power'):
+    ls = []
+    forces = []
+    lMaxs = np.arange(2,100,1)
+    for lMax in lMaxs:
+        A, B = load_coefs(f'csvs/power_1_omega_{omega}/maximized_coefs_lMax_{lMax}_Power_1_{constraint}.csv', norm=False)#, offset=1/(9.6e-5))
+
+        force = force_calc(lMax, A, B, omega)
+        ls += [lMax]
+        forces += [force]
+
+    print(f"Omega: {omega}. Max force: {np.max(forces)}")
+
+    ls = np.array(ls)
+    forces = np.array(forces)
+
+    popt, pcov = sp.curve_fit(f2, ls, forces, p0 =(10, 1.6))
+
+
+    a = int(popt[0] * 100) / 100
+    c = int(popt[1] * 100) / 100
+    ax.plot(ls, f2(ls, popt[0], popt[1]), label='fit')
+    ax.plot(ls, forces, label='obs')
+
+    ax.set_title(f'Omega: {omega}. {a} * (1 - 1/(l**{c}))')
+
+def magnitude_plot(ax, omega, constraint = 'power', lMax=200):
+    
+    for omega in [.7, .8, .9, 1, 1.1, 1.2, 1.3]:
+        A, B = load_coefs(f'csvs/power_1_omega_{omega}/maximized_coefs_lMax_{lMax}_Power_1_{constraint}.csv', norm=False)
+
+        mags = {}
+
+        for k in A.keys():
+            l = k[1]
+            mags[l] = A[k] + B[k]
+
+        mags_list = []
+        for l in range(2,lMax+1):
+            mags_list += [np.abs(mags[l])]
+
+        ax.plot(mags_list, label=omega)
+    #ax.set_ylim([0,.5])
+    ax.set_ylabel(r'Coeffiecient Magnitude $(|A^{\ell \, m} + B^{\ell \, m}|)$')
+    ax.set_xlabel(r'$\ell$ Value')
+    
+def force_plot(ax, omega, constraint = 'power', lMax=200):
+    
+    for omega in [.7, .8, .9, 1, 1.1, 1.2, 1.3]:
+        A, B = load_coefs(f'csvs/power_1_omega_{omega}/maximized_coefs_lMax_{lMax}_Power_1_{constraint}.csv', norm=False)
+
+        force_list = []
+        for l in range(2,lMax+1):
+            force_list += [force_calc(l, l-1, A, B, omega)]
+
+        ax.plot(force_list, c='black')#, label=omega)
+
+    ax.set_ylabel(r'$F_z$ Contribution per Multipole Order')
+    ax.set_xlabel(r'$\ell$ Value')
+
+def test(A,B):
+    keys = A.keys()
+
+    As = 0
+    Bs = 0
+    y = []
+
+    for k in keys:
+        As += A[k] * np.conj(A[k])
+        Bs += B[k] * np.conj(B[k])
+
+        print(A[k] * np.conj(A[k]) + B[k] * np.conj(B[k]))
+        y += [np.real(A[k] * np.conj(A[k]) + B[k] * np.conj(B[k]))]
+    print(As, Bs)
+
+    plt.plot(y)
 
 lMaxs = []
 forces = []
-lMax = 2
-
-for lMax in [2,3,5,8,10,15,20,30,50,100,200]:
-    A, B = load_coefs(f'maximized_coefs_lMax_{lMax}_power.csv', norm=False)#, offset=1/(9.6e-5))
-
-    print(f"lMax: {lMax}. Force: {force_calc(lMax, 1, A, B)}")
-
-
+lMax = 100
 
 #A_x, B_x = load_coefs('data_gauss_x_0p01_lMax_100.csv')
 #A_y, B_y = load_coefs('data_gauss_y_0p001_lMax_100.csv')
-A_z, B_z = load_coefs(f'maximized_coefs_lMax_{lMax}_norm.csv', norm=False)#, offset=1/(9.6e-5))
+#A_z, B_z = load_coefs('./csvs/maximized_coefs_lMax_100_Power_1_norm_per_ell_norm.csv', norm=False)
+#A_z, B_z = load_coefs(f'maximized_coefs_lMax_{lMax}_norm.csv', norm=False)#, offset=1/(9.6e-5))
 #A_z2, B_z2 = load_coefs('maximized_coefs_lMax_100.csv', norm=True)#, offset=1/(9.6e-5))
 fig, ax = plt.subplots(nrows=1, ncols=2)
+#magnitude_plot(ax[0, 0], .7)
+#magnitude_plot(ax[0, 1], .8)
+#magnitude_plot(ax[0, 2], .9)
+#magnitude_plot(ax[1, 0], 1)
+#magnitude_plot(ax[1, 1], 1.1)
+magnitude_plot(ax[0], 1.2)
+force_plot(ax[1], 1.2)
 
+#A, B = load_coefs('csvs/maximized_coefs_lMax_100_norm.csv')
+#make_csvs()
 
-#alternate_omega_full_x(ax[0], A_x, A_x)
-#alternate_omega_full_y(ax[0,1], A_y, A_y)
-alternate_omega_full_z(ax[0], A_z, B_z)
-#alternate_omega_full_z(ax[1], A_z2, B_z2)
-
-#alternate_omega_full_x(ax[1], A_x, A_x, True)
-#alternate_omega_full_y(ax[1,1], A_y, A_y, True)
-#alternate_omega_full_z(ax[1], A_z, B_z, True)
-
-
-fig.suptitle(r'$F_z$ as it varys by max $\ell$ and $\Omega$ | $\ell_{\text{max}} = %s$ | $d\theta$ = 0.1' % (lMax))
+ax[0].legend()
+#fig.suptitle(r'$F_z$ as it varys by max $\ell$ and $\Omega$ | $\ell_{\text{max}} = %s$ | $d\theta$ = 0.1' % (lMax))
+fig.suptitle(r'Coeffecient Magnitude and Force per $\ell$ value. Constrained by power $P = 1$')
 plt.show()
 
