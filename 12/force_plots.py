@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-from util import force_calc, full_force_calc, load_coefs
+from util import force_calc, load_coefs, force_x_calc, force_y_calc, force_z_calc
 import scipy.optimize as sp
 
 def f(x,a,b,c):
@@ -10,220 +10,81 @@ def f(x,a,b,c):
 def f2(x,a,c):
     return a* (1 - 1/(x**c))
 
-def alternate_omega(ax, A, B):
-    for omega in [1]:
-        f_omega_y = []
-        f_omega_x = []
-        base = force_calc(2, omega, A, B)
-        for l in range(2,lMax):
-            f_omega_y += [force_calc(l, A, B, omega)]# / base]
-            f_omega_x += [l]
-
-        popt, pcov = sp.curve_fit(f, f_omega_x, f_omega_y)
-        x = np.linspace(2,lMax,100)
-
-        ax.plot(x, f(x, popt[0], popt[1], popt[2]))
-        ax.scatter(f_omega_x, f_omega_y, label=omega)
-
-        ax.set_title(r'Varying $\Omega$')
-        ax.set_ylabel(r'Force increase over $\ell = 2$')
-        ax.set_xlabel(r'$\ell$ Max')
-        ax.legend()
-
-def alternate_omega_full(ax1, ax2, ax3, A, B):
-    for omega in [1]:
-        f_omega_y1 = []
-        f_omega_y2 = []
-        f_omega_y3 = []
-        f_omega_x = []
-        base = full_force_calc(2, omega, A, B)
-        print(base)
-        for l in range(2,lMax):
-            val = full_force_calc(l, omega, A, B)
-            f_omega_y1 += [val[0] / base[0]]
-            f_omega_y2 += [val[1]]# / base[1]]
-            f_omega_y3 += [val[2]]# / base[2]]
-            f_omega_x += [l]
-
-        #popt, pcov = sp.curve_fit(f, f_omega_x, f_omega_y)
-        #x = np.linspace(2,lMax,100)
-
-        #ax.plot(x, f(x, popt[0], popt[1], popt[2]))
-        #ax.scatter(f_omega_x, f_omega_y, label=omega)
-
-        ax1.plot(f_omega_y1, label='x')
-        ax2.plot(f_omega_y2, label='y')
-        ax3.plot(f_omega_y3, label='z')
-
-        ax1.set_title(r'Varying $\Omega$, X component')
-        ax1.set_ylabel(r'Force increase over $\ell = 2$')
-        ax1.set_xlabel(r'$\ell$ Max')
-
-        ax2.set_title(r'Varying $\Omega$, Y component')
-        ax2.set_ylabel(r'Force increase over $\ell = 2$')
-        ax2.set_xlabel(r'$\ell$ Max')
-
-        ax3.set_title(r'Varying $\Omega$, Z component')
-        ax3.set_ylabel(r'Force increase over $\ell = 2$')
-        ax3.set_xlabel(r'$\ell$ Max')
-
-def alternate_omega_full_x(ax, A, B, ratio = False, fit = False):
-    for omega in [1]:#[.6,.8,1,1.2,1,1.4]:
-        f_omega_y = []
-        f_omega_x = []
-        if ratio:
-            base = full_force_calc(2, omega, A, B)[0]
-        else:
-            base = 1
-
-        for l in range(2,lMax):
-            #print(full_force_calc(l, omega, A, B))
-            val = full_force_calc(l, omega, A, B)
-            f_omega_y += [val[0] / base]
-            f_omega_x += [l]
-
-        print(f'Maximum force: {np.max(f_omega_y)}')
-
-        if fit:#not ratio:
-            popt, pcov = sp.curve_fit(f, f_omega_x, f_omega_y)
-            x = np.linspace(2,lMax,100)
-
-            ax.plot(x, f(x, popt[0], popt[1], popt[2]))
-            ax.scatter(f_omega_x, f_omega_y, label=omega)
-
-            print(popt)
-        
-        ax.plot(f_omega_y, label=omega)
-        
-        if ratio:
-            ax.set_title(r'Force increase over $\ell = 2$')#. Fit Coef: $A x^{B} + C$. A:' + popt[0] + f'. B:{popt[1]}. C:{popt[2]}')
-            ax.set_ylabel(r'Force increase over $\ell = 2$')
-        else:
-            ax.set_title(r'Varying $\Omega$, X component')
-            ax.set_ylabel(r'$F_x$')
-            ax.legend()
-        ax.set_xlabel(r'$\ell$ Max')
-
-def alternate_omega_full_y(ax, A, B, ratio = False):
-    for omega in [1,1.1,1.2,1.3,1.4]:
-        f_omega_y = []
-        f_omega_x = []
-        if ratio:
-            base = full_force_calc(2, omega, A, B)[1]
-        else:
-            base = 1
-
-        for l in range(2,lMax):
-            val = full_force_calc(l, omega, A, B)
-            f_omega_y += [val[1] / base]
-            f_omega_x += [l]
-
-        #popt, pcov = sp.curve_fit(f, f_omega_x, f_omega_y)
-        #x = np.linspace(2,lMax,100)
-
-        #ax.plot(x, f(x, popt[0], popt[1], popt[2]))
-        #ax.scatter(f_omega_x, f_omega_y, label=omega)
-
-        ax.plot(f_omega_y, label='x')
-
-        ax.set_title(r'Varying $\Omega$, Y component')
-        if ratio:
-            ax.set_ylabel(r'Force increase over $\ell = 2$')
-        else:
-            ax.set_ylabel(r'$F_y$')
-        ax.set_xlabel(r'$\ell$ Max')
-
-def alternate_omega_full_z(ax, A, B, ratio = False):
-    for omega in [1]:
-        f_omega_y = []
-        f_omega_x = []
-        if ratio:
-            base = omega**4 / (24 * np.pi) #full_force_calc(2, omega, A, B)[2]
-        else:
-            base = 1
-
-        for l in range(2,lMax+1):
-            #print(l)
-            val = full_force_calc(l, omega, A, B)
-            f_omega_y += [val[2] / base]
-            f_omega_x += [l]
-
-        #popt, pcov = sp.curve_fit(f, f_omega_x, f_omega_y)
-        #x = np.linspace(2,lMax,100)
-
-        #ax.plot(x, f(x, popt[0], popt[1], popt[2]))
-        #ax.scatter(f_omega_x, f_omega_y, label=omega)
-
-        ax.plot(f_omega_y, label=omega)
-
-        print(f'Maximum force: {np.max(f_omega_y)}')
-
-        #print(popt)
-
-        #ax.set_title(r'Varying $\Omega$, Z component. Fit Coef: $A x^{B} + C$. A:' + popt[0] + f'. B:{popt[1]}. C:{popt[2]}')
-        if ratio:
-            ax.set_title(r'Force increase over $\ell = 2$')
-            ax.set_ylabel(r'Force increase over $\ell = 2$')
-        else:
-            ax.set_ylabel(r'$F_z$')
-            ax.set_title(r'Varying $\Omega$, Z component')
-            ax.legend()
-        ax.set_xlabel(r'$\ell$ Max')     
-
-def alternate_l(ax, A, B, omega=1):
-    for l in [3, 6, 9, 12, 15, 18]:
-        f_L = []
-        base = force_calc(2, omega, A, B)
-        for omega in np.linspace(0.1,2,100):
-            f_L += [force_calc(l, omega, A, B) / base]
-
-        ax.plot(f_L, label=l)
-        ax.set_yscale('log')
-        ax.set_title(r'Varying $\ell_{\text{max}}$')
-        ax.set_ylabel(r'Force increase over $\ell = 2$')
-        ax.set_xlabel(r'$\Omega$ Max')
-        ax.set_xticks(np.linspace(0,100,9), np.linspace(0,2,9))
-        ax.legend()
-
 def make_csvs():
     import subprocess
     power = 1
     R = 1
-    for omega in [.7,.8,.9,1,1.1,1.2,1.3]:
-        folder = f"csvs/power_{power}_omega_{omega}"
-        for l in [201]:#np.arange(101,200,1):
-            subprocess.run(["/Users/cdavis/Desktop/Work/Research/TendexVortexPlotting/12/cppScripts/nlp", str(l), str(0), str(power), str(R), str(omega), folder])
+    for power in [1]:
+        for omega in [1]:
+            folder = f"cppScripts/csvs/xyz_power_{power}_omega_{omega}"
+            for l in np.arange(2,201,1):
+                #subprocess.run(["/Users/cdavis/Desktop/Work/Research/TendexVortexPlotting/12/cppScripts/nlp_xyz_optimized", str(l), str(0), str(power), str(R), str(omega), folder, str(500), str(500), str(500), str(1), str(1)])
+                subprocess.run(["/Users/cdavis/Desktop/Work/Research/TendexVortexPlotting/12/cppScripts/overlap", 'cppScripts/params_z.txt', str(l)])
+                
 
-def lmax_plot(ax, omega, constraint = 'power'):
+
+def lmax_plot(ax, omega, lMax, constraint='power', fit=True, t='_xyz', metric='z'):
     ls = []
     forces = []
-    lMaxs = np.arange(2,100,1)
+    lMaxs = np.arange(2,lMax,1)
     for lMax in lMaxs:
-        A, B = load_coefs(f'csvs/power_1_omega_{omega}/maximized_coefs_lMax_{lMax}_Power_1_{constraint}.csv', norm=False)#, offset=1/(9.6e-5))
+        # Historical naming differs between z-only and xyz output folders.
+        if t == '_xyz':
+            coef_path = f'cppScripts/csvs/{constraint}_omega_{omega}{t}/maximized_coefs{t}_lMax_{lMax}_Power_1_{constraint}.csv'
+        else:
+            coef_path = f'cppScripts/csvs/{constraint}_0.5_omega_{omega}/maximized_coefs_lMax_{lMax}_Power_0_{constraint}.csv'
 
-        force = force_calc(lMax, A, B, omega)
+        A, B = load_coefs(coef_path, norm=False)
+
+        if metric == 'z':
+            force = force_z_calc(lMax, 2, A, B, omega)
+        elif metric == 'x':
+            force = force_x_calc(lMax, 2, A, B, omega)
+        elif metric == 'y':
+            force = force_y_calc(lMax, 2, A, B, omega)
+        elif metric == 'mag':
+            force = force_calc(lMax, 2, A, B, omega)
+        else:
+            raise ValueError("metric must be one of: 'z', 'x', 'y', 'mag'")
+
         ls += [lMax]
         forces += [force]
 
     print(f"Omega: {omega}. Max force: {np.max(forces)}")
 
-    ls = np.array(ls)
-    forces = np.array(forces)
+    ax.plot(ls, forces, label='Calculated', c='orange', lw=2)
 
-    popt, pcov = sp.curve_fit(f2, ls, forces, p0 =(10, 1.6))
+    if fit:
+        ls = np.array(ls)
+        forces = np.array(forces)
+
+        popt, pcov = sp.curve_fit(f2, ls, forces, p0 =(10, 1.6))
 
 
-    a = int(popt[0] * 100) / 100
-    c = int(popt[1] * 100) / 100
-    ax.plot(ls, f2(ls, popt[0], popt[1]), label='fit')
-    ax.plot(ls, forces, label='obs')
+        a = int(popt[0] * 100) / 100
+        c = int(popt[1] * 100) / 100
+        ax.plot(ls, f2(ls, popt[0], popt[1]), label='Fit', ls=':', c='g', lw=4)
+        #ax.set_title(f'Omega: {omega} Fit: $1 - 1/{{\ell}}^{{{c}}}$ Power Constrained to $P = 0.5$')
 
-    ax.set_title(f'Omega: {omega}. {a} * (1 - 1/(l**{c}))')
+    else:
+        ax.set_title(f'Omega: {omega}')
+    
+    ax.set_xlabel(r'$\ell_{\text{max}}$')
+    if metric == 'mag':
+        ax.set_ylabel(r'$|F|$')
+    elif metric == 'x':
+        ax.set_ylabel(r'$F_x$')
+    elif metric == 'y':
+        ax.set_ylabel(r'$F_y$')
+    else:
+        ax.set_ylabel(r'$F_z$')
 
-def magnitude_plot(ax, omega, constraint = 'power', lMax=200):
+    ax.axhline(.5, c='black', ls='--')
+    
+def magnitude_plot(ax, constraint = 'power', lMax=200):
     
     for omega in [.7, .8, .9, 1, 1.1, 1.2, 1.3]:
-        A, B = load_coefs(f'csvs/power_1_omega_{omega}/maximized_coefs_lMax_{lMax}_Power_1_{constraint}.csv', norm=False)
+        A, B = load_coefs(f'csvs/{constraint}_1_omega_{omega}/maximized_coefs_lMax_{lMax}_Power_1_{constraint}.csv', norm=False)
 
         mags = {}
 
@@ -240,16 +101,28 @@ def magnitude_plot(ax, omega, constraint = 'power', lMax=200):
     ax.set_ylabel(r'Coeffiecient Magnitude $(|A^{\ell \, m} + B^{\ell \, m}|)$')
     ax.set_xlabel(r'$\ell$ Value')
     
-def force_plot(ax, omega, constraint = 'power', lMax=200):
+def force_plot(ax, constraint = 'power', lMax=200):
     
-    for omega in [.7, .8, .9, 1, 1.1, 1.2, 1.3]:
-        A, B = load_coefs(f'csvs/power_1_omega_{omega}/maximized_coefs_lMax_{lMax}_Power_1_{constraint}.csv', norm=False)
+    for omega in [1]:# [.7, .8, .9, 1, 1.1, 1.2, 1.3]:
+        A, B = load_coefs(f'cppScripts/csvs/{constraint}_1_omega_{omega}/maximized_coefs_lMax_{lMax}_Power_1_{constraint}.csv', norm=False)
 
         force_list = []
         for l in range(2,lMax+1):
             force_list += [force_calc(l, l-1, A, B, omega)]
 
         ax.plot(force_list, c='black')#, label=omega)
+
+    ax.set_ylabel(r'$F_z$ Contribution per Multipole Order')
+    ax.set_xlabel(r'$\ell$ Value')
+
+def force_by_name(ax, name, lMax, omega=1):
+    A, B = load_coefs(name, norm=False)
+
+    force_list = []
+    for l in range(2,lMax+1):
+        force_list += [force_calc(l, l-1, A, B, omega)]
+    print('Max: ', force_calc(lMax, 2, A, B, omega))
+    ax.plot(force_list, c='black')#, label=omega)
 
     ax.set_ylabel(r'$F_z$ Contribution per Multipole Order')
     ax.set_xlabel(r'$\ell$ Value')
@@ -271,29 +144,92 @@ def test(A,B):
 
     plt.plot(y)
 
+def lmax_plot_xyz(ax, omega, lMax, constraint = 'power', fit = True, t = '_xyz'):
+    ls = []
+    Fxs = []
+    Fys = []
+    Fzs = []
+    lMaxs = np.arange(2,lMax,1)
+    temp = ''
+    if constraint == 'power':
+        temp = '_1'
+    for lMax in lMaxs:
+        A, B = load_coefs(f'cppScripts/csvs/{constraint}_omega_{omega}{t}/maximized_coefs{t}_lMax_{lMax}_Power_1_{constraint}.csv', norm=False)
+
+        Fx = force_x_calc(lMax, 2, A, B, omega)
+        Fy = force_y_calc(lMax, 2, A, B, omega)
+        Fz = force_z_calc(lMax, 2, A, B, omega)
+        ls += [lMax]
+        Fxs += [Fx]
+        Fys += [Fy]
+        Fzs += [Fz]
+
+    print(f"Omega: {omega}. Max force: {np.max([Fx, Fy, Fz])}")
+
+    ax.plot(ls, Fxs, label='Calculated Fx', lw=2)
+    ax.plot(ls, Fys, label='Calculated Fy', lw=2)
+    ax.plot(ls, Fzs, label='Calculated Fz', lw=2)
+
+    if fit:
+        ls = np.array(ls)
+        forces = np.array(forces)
+
+        popt, pcov = sp.curve_fit(f2, ls, forces, p0 =(10, 1.6))
+
+
+        a = int(popt[0] * 100) / 100
+        c = int(popt[1] * 100) / 100
+        ax.plot(ls, f2(ls, popt[0], popt[1]), label='Fit', ls=':', c='g', lw=4)
+        #ax.set_title(f'Omega: {omega} Fit: $1 - 1/{{\ell}}^{{{c}}}$ Power Constrained to $P = 1$')
+
+    else:
+        #fig.set_title(f'Omega: {omega}')
+        pass
+    ax.set_xlabel(r'$\ell_{\text{max}}$')
+    ax.set_ylabel(r'$F_z$')
+
+    ax.axhline(1, c='black', ls='--')
+
+def plot_convergence(ax, folder, lMax):
+    import pandas as pd
+    import glob
+    import os
+    path = folder # use your path
+    all_files = glob.glob(os.path.join(path , "*.csv"))
+
+    forces = np.zeros(lMax-2)
+    bounds = np.zeros(lMax-2)
+    ls = np.arange(2, lMax, 1)
+
+    for filename in all_files:
+        l = int(filename.split('/')[-1].split('_')[4])
+        if l < lMax:
+            df = pd.read_csv(filename, header=0)
+            bound_tight = df.iloc[17,1]
+            force = df.iloc[8, 1]
+
+            bounds[l - 2] = bound_tight
+            forces[l - 2] = force
+    ax.plot(ls, forces, label='forces')
+    ax.plot(ls, bounds, label='bounds')
+
+
 lMaxs = []
 forces = []
-lMax = 100
+lMax = 19
+fig, ax = plt.subplots(nrows=1, ncols=1)
 
-#A_x, B_x = load_coefs('data_gauss_x_0p01_lMax_100.csv')
-#A_y, B_y = load_coefs('data_gauss_y_0p001_lMax_100.csv')
-#A_z, B_z = load_coefs('./csvs/maximized_coefs_lMax_100_Power_1_norm_per_ell_norm.csv', norm=False)
-#A_z, B_z = load_coefs(f'maximized_coefs_lMax_{lMax}_norm.csv', norm=False)#, offset=1/(9.6e-5))
-#A_z2, B_z2 = load_coefs('maximized_coefs_lMax_100.csv', norm=True)#, offset=1/(9.6e-5))
-fig, ax = plt.subplots(nrows=1, ncols=2)
-#magnitude_plot(ax[0, 0], .7)
-#magnitude_plot(ax[0, 1], .8)
-#magnitude_plot(ax[0, 2], .9)
-#magnitude_plot(ax[1, 0], 1)
-#magnitude_plot(ax[1, 1], 1.1)
-magnitude_plot(ax[0], 1.2)
-force_plot(ax[1], 1.2)
+#magnitude_plot(ax[0])
+#force_plot(ax, lMax=200)
+#lmax_plot(ax, 1, 200, 'power', True, t='_xyzf', metric='z')
+#lmax_plot_xyz(ax, 1, 9, constraint = 'power', fit = False, t = '_xyz')
 
-#A, B = load_coefs('csvs/maximized_coefs_lMax_100_norm.csv')
-#make_csvs()
-
-ax[0].legend()
+make_csvs()
+#plot_convergence(ax, r'/Users/cdavis/Desktop/Work/Research/TendexVortexPlotting/12/cppScripts/csvs/xyz_power_1_omega_1', lMax)
+#force_by_name(ax, f'cppScripts/tmp_csvs_sched_10h/maximized_coefs_xyz_lMax_{lMax}_Power_1_power.csv', lMax)
+#ax.legend()
 #fig.suptitle(r'$F_z$ as it varys by max $\ell$ and $\Omega$ | $\ell_{\text{max}} = %s$ | $d\theta$ = 0.1' % (lMax))
-fig.suptitle(r'Coeffecient Magnitude and Force per $\ell$ value. Constrained by power $P = 1$')
+#fig.suptitle(r'Force Observed in System Maximized up to $\ell_{\text{max}}$ Value')
+#ig.suptitle(r'Coeffecient Magnitude and Force per $\ell$ value. Constrained by power $P = 1$')
 plt.show()
 

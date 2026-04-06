@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
+from matplotlib.colors import LogNorm
 from ctypes import *
 from datetime import datetime as dt
 from util import vect, rk_params, vis_params, spherical_fibonacci_points, make_vis_param, force_calc
@@ -23,11 +24,12 @@ val_return_E0.restype = c_double
 val_return.restype = c_double
 
 gauss_dtheta = 0.001
-lMax = 55
-cmax = 0.001
+lMax = 200
+cmax = 2
 coef_length = 50
 
-model_param, A, B = make_vis_param(lMax, name='data_gauss_phi_0p001_lMax_100.csv')
+model_param, A, B = make_vis_param(lMax, f'csvs/power_1_omega_1/maximized_coefs_lMax_{lMax}_Power_1_power.csv')
+
 
 # Simulation Parameters
 icity = 1
@@ -70,14 +72,14 @@ ax.set_ylim(theta_min, theta_max)
 
 colors = np.zeros_like(Theta)
 E0_colors = np.zeros_like(Theta)
-
 img = ax.imshow(
     colors,
     extent=[phi_min, phi_max, theta_min, theta_max],
     origin='lower',
     aspect='auto',
     cmap='viridis',
-    vmin=0, vmax=cmax
+    norm=LogNorm(vmin=1e-8, vmax=1e-8)
+    #vmin=0, vmax=cmax
 )
 
 scat = ax.scatter([],[])
@@ -88,7 +90,7 @@ for _ in range(seeds):
     lines.append(line)
 
 cbar = fig.colorbar(img, ax=ax)
-fig.suptitle(r'Reconstructed $E_0$ with $d\theta = %s$' % (gauss_dtheta))
+fig.suptitle(r'Maximized Coeffecients with $P = 1$')
 cbar.set_label(r'$\lambda_+$' if icity == 1 else r'$\lambda_-$')
 
 # ------------------ Animation update ------------------
@@ -106,9 +108,9 @@ def update(frame):
             E0_colors[i, j] = 0#val_return_E0(R, th, ph, icity, model_param, 1)
 
     img.set_data(colors)
-    img.set_clim(vmin=0, vmax=np.max(colors))
+    img.set_clim(vmin=1e-2, vmax=1e3)
 
-    F_z = force_calc(frame, 1.5, A, B)
+    F_z = force_calc(frame, A, B, 1)
     F_z = int(F_z * 100) / 100
 
     # Draw integral curves
@@ -125,13 +127,14 @@ def update(frame):
 
             lines[i].set_data(phis, thetas)
 
-    ax.set_title(r'Max $\ell$ coef = %s | $F_z$ = %s | $\Omega$ = %s$' % (int(model_param.ell), F_z, 1))
+    ax.set_title(r'Max $\ell$ coef = %s | $F_z$ = %s | $\Omega$ = %s' % (int(model_param.ell), F_z, 1))
     print('Time', dt.now() - start_frame, frame, "% min:", np.min(colors), "max:", np.max(colors))
 
     return [img, *lines]
 
 # ------------------ Run animation ------------------
-frames = [5,10,15,20,25,30,35,40,45,50,55]
+frames = [2,10,20,30,40,50,60,70,80,90,100]
+#frames = [2, 50]
 ani = FuncAnimation(fig, update, frames=frames, blit=False)
 
 title = 'dTheta_%s_lMax_%s' % (str(gauss_dtheta).replace(".", "p"), max(frames))

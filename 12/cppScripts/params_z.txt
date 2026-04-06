@@ -1,5 +1,5 @@
 # parameters (key=value)
-lMax=50
+lMax=5
 lMin=2
 threshold=1e-8
 lam=1.0
@@ -11,5 +11,5 @@ out_prefix=data_gauss_z
 use_phi=false
 precision=9
 dtheta=0.001
-deltaTheta = 3.141592
-deltaPhi = 1.570796
+deltaTheta = 0
+deltaPhi = 0

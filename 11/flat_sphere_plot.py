@@ -26,10 +26,10 @@ singular_find.restype = vect
 model_param = vis_params(
     M=1.,
     omega1=1,
-    omega2=-1.,
+    omega2=1,
     t=0.,          # this will be animated
-    C2=1.5,
-    w2=0
+    C2=4/3,
+    w2=np.pi/2
 )
 icity = 1
 l = 500

@@ -136,7 +136,7 @@ Matrix3f f(const Vector3f& r_V, vis_params vis_params) {
     double omega1 = vis_params.omega1;
     double omega2 = vis_params.omega2;
     double t = vis_params.t;
-    //double t = r_V(0);
+    double t = r_V(0);
     double w = vis_params.w2;
 
     return EleMQuad(r_V, M, 1, omega1, t, 0) + EleCQuad(r_V, M, C, omega2, t, w);

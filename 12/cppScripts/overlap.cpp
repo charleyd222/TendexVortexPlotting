@@ -111,8 +111,9 @@ int main(int argc, char** argv) {
     string params_path = "params.txt";
     if (argc >= 2) params_path = argv[1];
     auto params = read_params_file(params_path);
+    int lMax = (argc > 2) ? std::stoi(argv[2]) : 10;
 
-    int    lMax       = to_int_or   (params,"lMax",10);
+    //int    lMax       = to_int_or   (params,"lMax",10);
     int    lMin       = to_int_or   (params,"lMin",2);
     double threshold  = to_double_or(params,"threshold",1e-12);
     double lam        = to_double_or(params,"lam",1.0);

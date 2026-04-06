@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np # type: ignore
 from ctypes import *
 from datetime import datetime as dt
-from util import vect, vis_params, spherical_fibonacci_points, fit_circle, make_vis_param
+from util import vect, vis_params, spherical_fibonacci_points, make_vis_param
 
 #Runtime
 start = dt.now()
@@ -22,9 +22,11 @@ super_poynting.restype = c_double
 
 # Make data
 gauss_dtheta = 0.001
-lMax = 200
-#model_param, A, B = make_vis_param(lMax, f'maximized_coefs_lMax_{lMax}_python.csv')
-model_param, A, B = make_vis_param(lMax, f'csvs/power_1_omega_1/maximized_coefs_lMax_{lMax}_Power_1_power.csv')
+lMax = 100
+model_param, A, B = make_vis_param(lMax, f'cppScripts/csvs/power_1_omega_1/maximized_coefs_lMax_{lMax}_Power_1_power.csv')
+#model_param, A, B = make_vis_param(lMax, f'cppScripts/csvs/power_omega_1_xyz/maximized_coefs_xyz_lMax_{lMax}_Power_1_power.csv')
+#model_param, A, B = make_vis_param(lMax, f'data_gauss_z_0p001_lMax_50.csv')
+#model_param, A, B = make_vis_param(lMax, f'cppScripts/csvs/xyz_power_1_omega_1/maximized_coefs_xyz_lMax_{lMax}_Power_1_power.csv')
 
 icity = 1
 l = 500
@@ -44,8 +46,11 @@ h0 = 10e-2
 safety = .9
 ending_tolerance = 0
 
-theta = np.linspace(0+ending_tolerance, np.pi-ending_tolerance, n_theta)
-phi = np.linspace(0, 2*np.pi, n_phi)
+phi_offset = np.pi
+theta_offset = 0
+
+theta = np.linspace(0, np.pi, n_theta) - theta_offset
+phi = np.linspace(0, 2*np.pi, n_phi) - phi_offset
 Phi, Theta = np.meshgrid(phi, theta)
 
 # Color the sphere
@@ -65,7 +70,9 @@ ax = fig.add_subplot()
 # Label axes
 ax.set_xlabel(r'$\phi$')
 ax.set_ylabel(r'$\theta$')
-ax.set_title(f'I between 2 and {lMax} linear combination. Maximization Coefficients')
+ax.set_title(r'$\ell$' +f' between 2 and {lMax} linear combination.' + r'Maximizing $F = \sqrt{F_x^2 + F_y^2 + F_z^2}$')
+#ax.set_title(r'Super Kick Configuration Tendex Plot')# + r'Maximizing $F =F_z$')#= \sqrt{F_x^2 + F_y^2 + F_z^2}$')
+
 #ax.set_xlim(0, 2 * np.pi)
 #ax.set_ylim(0, np.pi)
 if False:
@@ -80,17 +87,16 @@ if False:
         thetas = np.array(vect_c.y[0:its])
         phis   = np.array(vect_c.z[0:its])
 
-        ax.plot(phis, thetas, color='black', linewidth=0.6, alpha=0.9)
+        ax.plot(phis - phi_offset, thetas - theta_offset, color='black', linewidth=0.6, alpha=0.9)
 
 
 # Heatmap uses phi horizontally and theta vertically
 m = ax.imshow(
     colors,
-    extent=[0, 2*np.pi, 0, np.pi],
+    extent=[np.min(phi), np.max(phi), np.min(theta), np.max(theta)],
     origin='lower',
     aspect='auto',
     cmap='viridis'
-    #vmin=0, vmax=1
 )
 
 print(dt.now() - start)

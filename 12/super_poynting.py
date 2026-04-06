@@ -13,11 +13,13 @@ super_poynting = CDLL("./cppScripts/rka_iter").super_poynting
 super_poynting.argtypes = [c_double, c_double, c_double, vis_params]
 super_poynting.restype = c_double
 
-model_param, A, B = make_vis_param(5, 'nlp_dpzdt_results_amplitudes.csv')
+lMax=24
+model_param, A, B = make_vis_param(lMax, f'cppScripts/csvs/xyz_power_1_omega_1/maximized_coefs_xyz_lMax_{lMax}_Power_1_power.csv')
+#model_param, A, B = make_vis_param(lMax, f'cppScripts/csvs/power_1_omega_1/maximized_coefs_lMax_{lMax}_Power_1_power.csv')
 
 R = 1
 
-n_phi = 200
+n_phi = 100
 n_theta = n_phi//2
 
 phi = np.linspace(0,2*np.pi, n_phi)
@@ -44,7 +46,7 @@ plt.imshow(
 
 plt.xlabel('Phi')
 plt.ylabel('Theta')
-plt.title('Super-Poynting Vector integrated in each grid point. Reconstructed E0 and B0, for l <= 30')
+plt.title(f'Super-Poynting Vector integrated in each grid point.\n Reconstructed E0 and B0, for $\ell$ <= {lMax}')
 print(dt.now() - start)
 plt.colorbar()
 plt.show()

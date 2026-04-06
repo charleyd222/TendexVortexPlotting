@@ -68,8 +68,18 @@ static void compute_Y_both(double theta, double phi, int l_max,
     sh->fill_Y(-2, Ym);
 }
 
+// Harmonic time dependence for each (l,m) mode.
+// Using exp(-i m omega t) keeps m=0 modes stationary and rotates higher-|m| modes.
+static inline cd apply_time_phase(cd coeff, int m, double omega, double t) {
+    double phase = -static_cast<double>(m) * omega * t;
+    return coeff * std::exp(cd(0.0, phase));
+}
+
 Matrix3d fLB(const Vector3d& r_V, vis_params vis_params) {
     const int l_max = vis_params.ell;
+    const double omega1 = vis_params.omega1;
+    const double omega2 = vis_params.omega2;
+    const double t = vis_params.t;
 
     // ── One WignerH computation for all coefficients ───────────────────────
     thread_local std::vector<cd> Yp, Ym;
@@ -81,9 +91,12 @@ Matrix3d fLB(const Vector3d& r_V, vis_params vis_params) {
         int l_T = (int)vis_params.l[i];
         if (l_T > l_max) continue;
 
-        int    m_T = (int)vis_params.m[i];
-        double A_T =      vis_params.A_re[i];
-        cd     B_T = 1i * vis_params.B_im[i];
+        int m_T = (int)vis_params.m[i];
+        cd A_T = vis_params.A_re[i] + 1i * vis_params.A_im[i];
+        cd B_T = vis_params.B_re[i] + 1i * vis_params.B_im[i];
+
+        A_T = apply_time_phase(A_T, m_T, omega1, t);
+        B_T = apply_time_phase(B_T, m_T, omega2, t);
 
         // Direct index lookup — no SH computation here
         int idx = l_T*(l_T+1) + m_T;
@@ -102,6 +115,9 @@ Matrix3d fLB(const Vector3d& r_V, vis_params vis_params) {
 
 Matrix3d fLE(const Vector3d& r_V, vis_params vis_params) {
     const int l_max = vis_params.ell;
+    const double omega1 = vis_params.omega1;
+    const double omega2 = vis_params.omega2;
+    const double t = vis_params.t;
 
     // One WignerH computation for all coefficients
     thread_local std::vector<cd> Yp, Ym;
@@ -116,6 +132,9 @@ Matrix3d fLE(const Vector3d& r_V, vis_params vis_params) {
         int m_T = (int)vis_params.m[i];
         cd A_T = vis_params.A_re[i] + 1i * vis_params.A_im[i];
         cd B_T = vis_params.B_re[i] + 1i * vis_params.B_im[i];
+
+        A_T = apply_time_phase(A_T, m_T, omega1, t);
+        B_T = apply_time_phase(B_T, m_T, omega2, t);
 
         // Direct index lookup — no SH computation here
         int idx = l_T*(l_T+1) + m_T;
